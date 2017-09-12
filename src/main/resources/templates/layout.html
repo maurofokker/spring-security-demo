@@ -2,7 +2,10 @@
 <html xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/web/thymeleaf/layout">
 <head>
 <title>Layout</title>
-<link rel="stylesheet" th:href="@{/css/bootstrap.min.css}" href="../../css/bootstrap.min.css" />
+<link rel="stylesheet" th:href="@{/static/css/bootstrap.min.css}" href="../static/css/bootstrap.min.css" />
+<!-- TODO: implement this or with webjar
+<link type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet"/>
+-->
 </head>
 <body>
 	<div class="container">
@@ -10,7 +13,10 @@
 			<div class="navbar-inner">
                 <a class="brand" th:href="@{/}"> Home </a>
 				<ul class="nav">
-					<li><a th:href="@{/}" href="users.html"> Users </a></li>
+					<li><a th:href="@{/user/}" href="users.html"> Users </a></li>
+				</ul>
+				<ul class="nav pull-right">
+					<li><a th:href="@{/logout}" class="menu-right" > Logout </a></li>
 				</ul>
 			</div>
 		</div>

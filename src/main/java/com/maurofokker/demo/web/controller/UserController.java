@@ -15,7 +15,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.validation.Valid;
 
 @Controller
-@RequestMapping("/")
+@RequestMapping("/user")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -50,7 +50,7 @@ public class UserController {
         }
         user = this.userRepository.save(user);
         redirect.addFlashAttribute("globalMessage", "Successfully created a new user");
-        return new ModelAndView("redirect:/{user.id}", "user.id", user.getId());
+        return new ModelAndView("redirect:/user/{user.id}", "user.id", user.getId());
     }
 
     @RequestMapping("foo")
@@ -61,7 +61,7 @@ public class UserController {
     @RequestMapping(value = "delete/{id}")
     public ModelAndView delete(@PathVariable("id") Long id) {
         this.userRepository.deleteUser(id);
-        return new ModelAndView("redirect:/");
+        return new ModelAndView("redirect:/user/");
     }
 
     @RequestMapping(value = "modify/{id}", method = RequestMethod.GET)

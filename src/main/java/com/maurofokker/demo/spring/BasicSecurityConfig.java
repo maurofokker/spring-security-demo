@@ -36,6 +36,10 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
      * Url authorization goes from specific (delete) to general (anyReq)
      * Default login form page is /login also the processing url page is /login
      * the reason for not wanting to use the default is that the defaults basically leak implementation details
+     * Logout url default is /logout so it needs to change
+     *  logoutRequestMatcher(...) allow to be stricter and specify exact http method to do logout
+     *  if CSRF is enabled, GET won’t work for logging out, only POST
+     *  we should only use POST anyways, since logout is an operation that changes the state of the system
      * @param http
      * @throws Exception
      */
@@ -48,6 +52,15 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
                 .formLogin()
                     .loginPage("/login").permitAll() // login form page, exception to be available for people not logged in
                     .loginProcessingUrl("/doLogin") // login proccesion url where authentication happens
+                .and()
+                .logout()
+                    .permitAll().logoutUrl("/logout")
+                    //.logoutRequestMatcher(new AntPathRequestMatcher("/doLogout", "GET"))
+                        //.clearAuthentication()
+                        //.deleteCookies()
+                        //.invalidateHttpSession()
+                        //.logoutSuccessHandler()
+                        //.logoutSuccessUrl()
                 .and()
                 .csrf().disable()
         ;
