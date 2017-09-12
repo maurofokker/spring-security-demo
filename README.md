@@ -1,4 +1,10 @@
-# Spring Security
+# Spring Security Demo
+
+## Technology
+* Java 8+
+* Spring Boot 1.5.4
+* Spring data jpa for persistence
+* Maven 3.0+
 
 ## Configuration
 
@@ -73,17 +79,17 @@ protected void configure(HttpSecurity http) throws Exception {
 }
 ```
 #### Some types of authorizations
-* hasAuthority: is the principal authority
-* hasAnyRole: can have any role configured (ROLE_ADMIN, ROLE_ROOT)
-* hasAnyAuthority: can have any of authorities passed (ADMIN, ROOT)
-* hasIpAddress: not very used in production, useful to be able to pinpoint a specific ip address
-* access: allow the use of expressions
-* authenticated: just need to be authenticated in order to use url, no special authority or privilege just authenticated
-* anonymous: any type of access is ok for url
-* denyAll: restrict any kind of access
-* permitAll
-* fullyAuthenticated, rememberMe: are tied 
-* not: allow chaining 
+* `hasAuthority`: is the principal authority
+* `hasAnyRole`: can have any role configured (ROLE_ADMIN, ROLE_ROOT)
+* `hasAnyAuthority`: can have any of authorities passed (ADMIN, ROOT)
+* `hasIpAddress`: not very used in production, useful to be able to pinpoint a specific ip address
+* `access`: allow the use of expressions
+* `authenticated`: just need to be authenticated in order to use url, no special authority or privilege just authenticated
+* `anonymous`: any type of access is ok for url
+* `denyAll`: restrict any kind of access
+* `permitAll`
+* `fullyAuthenticated`, rememberMe: are tied 
+* `not`: allow chaining 
 
 ### Custom login form page config
 * Configured in method `configure` (overrid) of `WebSecurityConfigurerAdapter`
@@ -145,30 +151,125 @@ protected void configure(HttpSecurity http) throws Exception {
 ```
 
 #### Other config that wraps logout
-* clearAuthentication: is true by default, but can be turn it off. Typically, that's not something wanted, but there are production scenarios where you might need to make sure that you don't clear authentication when your user logs out
-* deleteCookies: nice way to specify that when your user logs out, a list of custom cookies should be cleared. When using custom cookies that do need to be cleared on logout, this is the way to do it
-* invalidateHttpSession: enabled by default, it's something that you can change if you have a scenario that requires you to not invalidate the session when your user logs out
-* logoutSuccessUrl: when logged out, we were automatically redirected to the login page, with an extra logout parameter. You may want to have a custom logout page saying you have been logged out, and maybe presenting some extra information. So if you need the logout process to redirect to a different page, not the login page, this is the way to do it
-* logoutSuccessHandler: to run extra logic when logged out. this is basically a way to hook into the logout process and run some custom logic. So for example, when you have other external systems that need to be aware when you're logging out
+* `clearAuthentication`: is true by default, but can be turn it off. Typically, that's not something wanted, but there are production scenarios where you might need to make sure that you don't clear authentication when your user logs out
+* `deleteCookies`: nice way to specify that when your user logs out, a list of custom cookies should be cleared. When using custom cookies that do need to be cleared on logout, this is the way to do it
+* `invalidateHttpSession`: enabled by default, it's something that you can change if you have a scenario that requires you to not invalidate the session when your user logs out
+* `logoutSuccessUrl`: when logged out, we were automatically redirected to the login page, with an extra logout parameter. You may want to have a custom logout page saying you have been logged out, and maybe presenting some extra information. So if you need the logout process to redirect to a different page, not the login page, this is the way to do it
+* `logoutSuccessHandler`: to run extra logic when logged out. this is basically a way to hook into the logout process and run some custom logic. So for example, when you have other external systems that need to be aware when you're logging out
 
 ## Anonymous Authentication
 * Helper, artificial, concept in spring that is helpful in some scenarios
 * There are scenarios where if no principal is currently logged in, then a lot of extra code is needed (write) and a lot of extra logic to work around that problem
-    * Scenario 1 Login: common login config is including the username in the log message, in order to debug or trace activities by username. When that logging logic 
+    * `Scenario 1 Login`: common login config is including the username in the log message, in order to debug or trace activities by username. When that logging logic 
     runs within a non-secured context (this login page) that logic will have to deal with a `null` principal. Unless exists a `default` anonymous principal to put in
     the log message, the system is goint to have to deal with that null. So that anonymous authentication just helps in that scenario.
-    * Scenario 2 Auditing: in most systems, audit logs will have a user, the problem is that when generating an audit entry from a non­secured part of the application, 
+    * `Scenario 2 Auditing`: in most systems, audit logs will have a user, the problem is that when generating an audit entry from a non­secured part of the application, 
     we run into the same problem where don't have user to use in the audit entry. That is why this anonymous authentication or anonymous user can help. And again, 
     once you're authenticated in the application, the real principal will be available in the Spring Security context, so this is just for those areas of the application, 
     where you are not yet authenticated.
 * Anonymous authentication token is going to be available whenever a real principal, an authenticated principal, is not available
     * For example, if the audit code is using the principal out of the Spring Security authentication, there is no need to write special code, and there is no need to do null checking or any other checks on the authentication, and everything is going to be working out of the box
 
+## Persistence configuration
+* Dependency for spring data and spring boot is easy
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+```
+* For development and test is good to use in memory data bases like hsql
+```xml
+<dependency>
+	<groupId>org.hsqldb</groupId>
+	<artifactId>hsqldb</artifactId>
+	<scope>runtime</scope>
+</dependency>
+<!-- <dependency> -->
+<!-- <groupId>mysql</groupId> -->
+<!-- <artifactId>mysql-connector-java</artifactId> -->
+<!-- <version>${mysql.version}</version> -->
+<!-- </dependency> -->
+```
+
+* Configuration is done with java annotations 
+```java
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+@Configuration
+@EnableJpaRepositories(basePackages = "com.maurofokker.demo.persistence")
+@EntityScan("com.maurofokker.demo.web.model")
+public class DemoPersistenceJpaConfig {
+}
+```
+* Entities are annotated 
+```java
+import org.hibernate.validator.constraints.NotEmpty;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import java.util.Calendar;
+
+@Entity
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotEmpty(message = "Username is required.")
+    private String username;
+
+    @NotEmpty(message = "Email is required.")
+    private String email;
+
+    private Calendar created = Calendar.getInstance();
+
+    // getters and setters
+}
+```
+* For crud operations spring data comes with handy functions out of the box
+```java
+import com.maurofokker.demo.web.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+}
+```
+* `JpaRepository` and `MongoRepository` interfaces extend `CrudRepository` It takes the domain class to manage as well as the id type of the domain class as type arguments
+  The `CrudRepository` provides sophisticated CRUD functionality for the entity class that is being managed
+
+* `CrudRepository` interface
+```java
+public interface CrudRepository<T, ID extends Serializable>
+    extends Repository<T, ID> {
+
+    <S extends T> S save(S entity); 
+
+    T findOne(ID primaryKey);       
+
+    Iterable<T> findAll();          
+
+    Long count();                   
+
+    void delete(T entity);          
+
+    boolean exists(ID primaryKey);  
+
+    // … more functionality omitted.
+}
+```
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
 
 ## References
+
+### Spring Security
 
 1 [Java Configuration in Spring Security](http://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#jc)
 
@@ -179,3 +280,10 @@ protected void configure(HttpSecurity http) throws Exception {
 4 [Logout in the Spring Security Reference](http://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-logout)
 
 5 [Anonymous Authentication in the Spring Security Reference](http://docs.spring.io/spring-security/site/docs/current/reference/htmlsingle/#anonymous)
+
+
+### Persistence
+
+1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
+
+2 [Introduction to jpa with spring boot data jpa](http://www.springboottutorial.com/introduction-to-jpa-with-spring-boot-data-jpa)

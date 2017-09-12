@@ -1,15 +1,8 @@
 package com.maurofokker.demo.persistence;
 
 import com.maurofokker.demo.web.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository {
-
-    Iterable<User> findAll();
-
-    User save(User user);
-
-    User findUser(Long id);
-
-    void deleteUser(Long id);
+public interface UserRepository extends JpaRepository<User, Long> {
 
 }
