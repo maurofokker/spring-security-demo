@@ -84,8 +84,39 @@ protected void configure(HttpSecurity http) throws Exception {
 * permitAll
 * fullyAuthenticated, rememberMe: are tied 
 * not: allow chaining 
+
+### Custom login form page config
+* Configured in method `configure` (overrid) of `WebSecurityConfigurerAdapter`
+* Default login form page is /login also the processing url page is /login
+* Reason for not wanting to use the default configuration is that the defaults basically leak implementation details
+* When using defaults other people can know about the framework and can exploit vulnerabilities if not patched
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+       .authorizeRequests()
+           //.antMatchers("/delete/**").hasRole("ADMIN")
+           .anyRequest().authenticated()
+       .and()
+       .formLogin()    
+           .loginPage("/login").permitAll() // login form page, exception to be available for people not logged in
+           .loginProcessingUrl("/doLogin") // login proccesion url where authentication happens
+       .and()
+       .csrf().disable()
+    ;
+}
+```
+* Create login page (thymeleaf) and reference it with a controller
+```java
+@RequestMapping("/login")
+public String list() {
+    return "loginPage";
+}
+```
 ## References
 
 1 [Java Configuration in Spring Security](http://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#jc)
 
 2 [Authorization Architecture](https://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#authorization)
+
+3 [Java Config and Form Login in the Spring Security](http://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-form)
