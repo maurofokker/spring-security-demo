@@ -31,9 +31,11 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
 
     /**
      * Difference btw use of Role and Authority in url authorization:
-     *  hasRole("ADMIN") looks for prefix ADMIN in ADMIN_AUTHORITY
-     *  hasAuthority("ADMIN") looks for ADMIN
+     *  hasRole("ADMIN") looks for `ROLE_` prefix authority (so it really checks for `ROLE_ADMIN` authority)
+     *  hasAuthority("ADMIN") looks for ADMIN, so `Authority` API don't looks for prefix, is new and clean
      * Url authorization goes from specific (delete) to general (anyReq)
+     * Default login form page is /login also the processing url page is /login
+     * the reason for not wanting to use the default is that the defaults basically leak implementation details
      * @param http
      * @throws Exception
      */
@@ -41,10 +43,13 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
-                    .antMatchers("/delete/**").hasRole("ADMIN")
                     .anyRequest().authenticated()
                 .and()
-                .formLogin()    // this is default login created by spring when no overriding configure method
-                ;
+                .formLogin()
+                    .loginPage("/login").permitAll() // login form page, exception to be available for people not logged in
+                    .loginProcessingUrl("/doLogin") // login proccesion url where authentication happens
+                .and()
+                .csrf().disable()
+        ;
     }
 }
