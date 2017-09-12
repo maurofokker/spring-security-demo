@@ -151,6 +151,19 @@ protected void configure(HttpSecurity http) throws Exception {
 * logoutSuccessUrl: when logged out, we were automatically redirected to the login page, with an extra logout parameter. You may want to have a custom logout page saying you have been logged out, and maybe presenting some extra information. So if you need the logout process to redirect to a different page, not the login page, this is the way to do it
 * logoutSuccessHandler: to run extra logic when logged out. this is basically a way to hook into the logout process and run some custom logic. So for example, when you have other external systems that need to be aware when you're logging out
 
+## Anonymous Authentication
+* Helper, artificial, concept in spring that is helpful in some scenarios
+* There are scenarios where if no principal is currently logged in, then a lot of extra code is needed (write) and a lot of extra logic to work around that problem
+    * Scenario 1 Login: common login config is including the username in the log message, in order to debug or trace activities by username. When that logging logic 
+    runs within a non-secured context (this login page) that logic will have to deal with a `null` principal. Unless exists a `default` anonymous principal to put in
+    the log message, the system is goint to have to deal with that null. So that anonymous authentication just helps in that scenario.
+    * Scenario 2 Auditing: in most systems, audit logs will have a user, the problem is that when generating an audit entry from a non­secured part of the application, 
+    we run into the same problem where don't have user to use in the audit entry. That is why this anonymous authentication or anonymous user can help. And again, 
+    once you're authenticated in the application, the real principal will be available in the Spring Security context, so this is just for those areas of the application, 
+    where you are not yet authenticated.
+* Anonymous authentication token is going to be available whenever a real principal, an authenticated principal, is not available
+    * For example, if the audit code is using the principal out of the Spring Security authentication, there is no need to write special code, and there is no need to do null checking or any other checks on the authentication, and everything is going to be working out of the box
+
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
@@ -164,3 +177,5 @@ protected void configure(HttpSecurity http) throws Exception {
 3 [Java Config and Form Login in the Spring Security](http://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-form)
 
 4 [Logout in the Spring Security Reference](http://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-logout)
+
+5 [Anonymous Authentication in the Spring Security Reference](http://docs.spring.io/spring-security/site/docs/current/reference/htmlsingle/#anonymous)
