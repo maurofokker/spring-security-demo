@@ -1,5 +1,6 @@
 package com.maurofokker.demo.run;
 
+import com.maurofokker.demo.spring.BasicSecurityConfig;
 import com.maurofokker.demo.spring.DemoWebConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -8,9 +9,11 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 public class SpringSecurityDemoApplication {
 
 	private final static Object[] CONFIGS = { // @formatter:off
+			SpringSecurityDemoApplication.class,
+
 			DemoWebConfig.class,
 
-			SpringSecurityDemoApplication.class
+			BasicSecurityConfig.class
 	}; // @formatter:on
 
 	public static void main(String[] args) {
