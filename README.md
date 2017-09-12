@@ -170,6 +170,68 @@ protected void configure(HttpSecurity http) throws Exception {
 * Anonymous authentication token is going to be available whenever a real principal, an authenticated principal, is not available
     * For example, if the audit code is using the principal out of the Spring Security authentication, there is no need to write special code, and there is no need to do null checking or any other checks on the authentication, and everything is going to be working out of the box
 
+## Registration flow with spring security
+
+### Simple registration form
+* Controller method to display registration form
+```java
+@RequestMapping(value = "signup")
+public ModelAndView registrationForm() {
+    return new ModelAndView("registrationPage", "user", new User());
+}
+```
+* Thymeleaf registration page
+* Controller method to registration logic from registration form action
+```java
+@RequestMapping(value = "user/register")
+public ModelAndView registerUser(@Valid User user, BindingResult result) {
+    if (result.hasErrors()) {
+        return new ModelAndView("registrationPage", "user", user);
+    }
+    try {
+        userService.registerNewUser(user);
+    } catch (EmailExistsException e) {
+        result.addError(new FieldError("user", "email", e.getMessage()));
+        return new ModelAndView("registrationPage", "user", user);
+    }
+    return new ModelAndView("redirect:/login");
+}
+```
+* Service method to implement registration of new user logic
+```java
+@Override
+public User registerNewUser(final User user) throws EmailExistsException {
+    if (emailExist(user.getEmail())) {
+        throw new EmailExistsException("There is an account with that email address: " + user.getEmail());
+    }
+    return repository.save(user);
+}
+
+private boolean emailExist(String email) {
+    final User user = repository.findByEmail(email);
+    return user != null;
+}
+```
+* Security config to allow access to registration form
+```java
+@Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                    .antMatchers("/signup", "/user/register").permitAll() // give access to url and operation
+                    .anyRequest().authenticated()
+                .and()
+                .formLogin()
+                    .loginPage("/login").permitAll() // login form page, exception to be available for people not logged in
+                    .loginProcessingUrl("/doLogin") // login proccesion url where authentication happens
+                .and()
+                .logout()
+                    .permitAll().logoutUrl("/logout")
+                .and()
+                .csrf().disable()
+        ;
+    }
+```
 ## Persistence configuration
 * Dependency for spring data and spring boot is easy
 ```xml
@@ -281,7 +343,7 @@ public interface CrudRepository<T, ID extends Serializable>
 
 5 [Anonymous Authentication in the Spring Security Reference](http://docs.spring.io/spring-security/site/docs/current/reference/htmlsingle/#anonymous)
 
-
+6 [Registration form](http://www.baeldung.com/spring-security-registration)
 ### Persistence
 
 1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
