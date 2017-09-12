@@ -2,6 +2,7 @@ package com.maurofokker.demo.run;
 
 import com.maurofokker.demo.spring.BasicSecurityConfig;
 import com.maurofokker.demo.spring.DemoPersistenceJpaConfig;
+import com.maurofokker.demo.spring.DemoServiceConfig;
 import com.maurofokker.demo.spring.DemoWebConfig;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,6 +15,7 @@ public class SpringSecurityDemoApplication {
 
 			DemoWebConfig.class,
 			DemoPersistenceJpaConfig.class,
+			DemoServiceConfig.class,
 
 			BasicSecurityConfig.class
 	}; // @formatter:on
