@@ -13,6 +13,7 @@
     <h1>Login page</h1>
 
     <div th:if="${param.error}" class="alert alert-danger">Invalid username and password.</div>
+    <div th:if="${param.logout}" class="alert alert-danger">You have been logged out.</div>
 
     <form th:action="@{/doLogin}" method="post" class="form-horizontal">
         <div class="form-group">
