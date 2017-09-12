@@ -3,6 +3,7 @@ package com.maurofokker.demo.spring;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 
@@ -27,4 +28,23 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
                 withUser("user").password("password").
                 roles("USER");
     } // @formatter:on
+
+    /**
+     * Difference btw use of Role and Authority in url authorization:
+     *  hasRole("ADMIN") looks for prefix ADMIN in ADMIN_AUTHORITY
+     *  hasAuthority("ADMIN") looks for ADMIN
+     * Url authorization goes from specific (delete) to general (anyReq)
+     * @param http
+     * @throws Exception
+     */
+    @Override
+    protected void configure(HttpSecurity http) throws Exception {
+        http
+                .authorizeRequests()
+                    .antMatchers("/delete/**").hasRole("ADMIN")
+                    .anyRequest().authenticated()
+                .and()
+                .formLogin()    // this is default login created by spring when no overriding configure method
+                ;
+    }
 }
