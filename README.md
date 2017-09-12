@@ -49,9 +49,43 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
 ```
 * change the global configuration
 * disable basic auth config
-* replace basic auth with default login form config (auto generated in this case)
+* replace basic auth with default login form config (auto generated in this case bc default configure method in WebSecurityConfigurerAdapter)
 * is possible to override auto generated form
 
+### Url authorization
+
+* Override method `configure` from `WebSecurityConfigurerAdapter`
+* Difference btw use of Role and Authority in url authorization:
+    *  hasRole("ADMIN") looks for `ROLE_` prefix authority (so it really checks for `ROLE_ADMIN` authority)
+    *  hasAuthority("ADMIN") looks for ADMIN, so `Authority` API don't looks for prefix, is new and clean
+* Url authorization goes from specific (delete) to general (anyRequest)
+* If a user that try to access an URL secured and don't have authority then a 403 status code is send by API
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+        .authorizeRequests()
+            .antMatchers("/delete/**").hasRole("ADMIN")
+            .anyRequest().authenticated()
+        .and()
+        .formLogin()    // this is default login created by spring when no overriding configure method
+    ;
+}
+```
+#### Some types of authorizations
+* hasAuthority: is the principal authority
+* hasAnyRole: can have any role configured (ROLE_ADMIN, ROLE_ROOT)
+* hasAnyAuthority: can have any of authorities passed (ADMIN, ROOT)
+* hasIpAddress: not very used in production, useful to be able to pinpoint a specific ip address
+* access: allow the use of expressions
+* authenticated: just need to be authenticated in order to use url, no special authority or privilege just authenticated
+* anonymous: any type of access is ok for url
+* denyAll: restrict any kind of access
+* permitAll
+* fullyAuthenticated, rememberMe: are tied 
+* not: allow chaining 
 ## References
 
-[Java Configuration in Spring Security](http://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#jc)
+1 [Java Configuration in Spring Security](http://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#jc)
+
+2 [Authorization Architecture](https://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#authorization)
