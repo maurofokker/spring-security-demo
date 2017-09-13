@@ -232,6 +232,49 @@ private boolean emailExist(String email) {
         ;
     }
 ```
+
+### Register and authenticate real users
+* Authentication with newly registered users that were persisted in db
+* Implementation of spring security UserDetailsService interface
+```java
+@Transactional
+@Service
+public class DemoUserDetailsService implements UserDetailsService {
+
+    // needed bc there are gonna be persistence work
+    // to retrieve user
+    @Autowired
+    private UserRepository userRepository;
+
+    @Override
+    public UserDetails loadUserByUsername(final String email) throws UsernameNotFoundException {
+        final User user  = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException("No user found with email: " + email);
+        }
+        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), true, true, true, true, getAuthorities("ROLE_USER"));
+    }
+
+    /**
+     * wrapping authorities in the format spring security expects
+     * add authority in collection
+     * @param role
+     * @return
+     */
+    private Collection<? extends GrantedAuthority> getAuthorities(String role) {
+        return Arrays.asList(new SimpleGrantedAuthority(role));
+    }
+}
+```
+* Wire UserDetailsService in security configuration
+```java
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+    auth.userDetailsService(userDetailsService);
+} 
+```
+
+
 ## Persistence configuration
 * Dependency for spring data and spring boot is easy
 ```xml
