@@ -1,7 +1,7 @@
 package com.maurofokker.demo.security;
 
 import com.maurofokker.demo.persistence.UserRepository;
-import com.maurofokker.demo.web.model.User;
+import com.maurofokker.demo.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;

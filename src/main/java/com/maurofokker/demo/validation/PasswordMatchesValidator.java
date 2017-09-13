@@ -1,6 +1,6 @@
 package com.maurofokker.demo.validation;
 
-import com.maurofokker.demo.web.model.User;
+import com.maurofokker.demo.model.User;
 
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;

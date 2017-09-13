@@ -3,7 +3,7 @@ package com.maurofokker.demo.web.controller;
 import com.maurofokker.demo.persistence.UserRepository;
 import com.maurofokker.demo.service.IUserService;
 import com.maurofokker.demo.validation.EmailExistsException;
-import com.maurofokker.demo.web.model.User;
+import com.maurofokker.demo.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -36,7 +36,7 @@ public class UserController {
     }
 
     @RequestMapping("{id}")
-    public ModelAndView view(@PathVariable("id") User user) {
+    public ModelAndView view(@PathVariable("id") final User user) {
         return new ModelAndView("users/view", "user", user);
     }
 

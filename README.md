@@ -274,6 +274,45 @@ public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception 
 } 
 ```
 
+### Active account via Email
+* Activate registration using a verification token
+```java
+@Entity
+public class VerificationToken {
+
+    private static final int EXPIRATION = 60 * 24;
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String token;
+
+    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false, name = "user_id")
+    private User user;
+
+    private Date expiryDate;
+    
+    // getters and setters
+}
+```
+* Persistence API for verification token
+```java
+public interface VerificationTokenRepository extends JpaRepository<VerificationToken, Long> {
+    VerificationToken findByToken(String token);
+}
+```
+* User is created disabled
+* During registration controller is sent an event to notify the newly created user (`RegistrationContoller.registerUser`)
+* Event is received by a listener that will send a verification email to new user to confirm registration (`RegistrationListener`)
+    * Token is created
+    * Email is sent
+* Confirm registration is received by `/registrationConfirm` API (`RegistrationController.confirmRegistration`)
+    * User is retrieved using token (loaded from db)
+    * Do some validations related to token dates
+    * Set user enabled in db
+    * Redirect to login page
 
 ## Persistence configuration
 * Dependency for spring data and spring boot is easy
@@ -339,7 +378,7 @@ public class User {
 ```
 * For crud operations spring data comes with handy functions out of the box
 ```java
-import com.maurofokker.demo.web.model.User;
+import com.maurofokker.demo.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface UserRepository extends JpaRepository<User, Long> {

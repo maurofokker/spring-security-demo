@@ -1,4 +1,4 @@
-package com.maurofokker.demo.web.model;
+package com.maurofokker.demo.model;
 
 import com.maurofokker.demo.validation.PasswordMatches;
 import org.hibernate.validator.constraints.Email;
@@ -25,6 +25,9 @@ public class User {
     @Transient
     @NotEmpty(message = "Password confirmation is required.")
     private String passwordConfirmation;
+
+    @Column
+    private Boolean enabled;
 
     private Calendar created = Calendar.getInstance();
 
@@ -68,8 +71,16 @@ public class User {
         this.passwordConfirmation = passwordConfirmation;
     }
 
+    public Boolean getEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(final Boolean enabled) {
+        this.enabled = enabled;
+    }
+
     @Override
     public String toString() {
-        return "User{" + "id=" + id + ", email='" + email + '\'' + ", password='" + password + '\'' + ", passwordConfirmation='" + passwordConfirmation + '\'' + ", created=" + created + '}';
+        return "User{" + "id=" + id + '\'' + ", email='" + email + '\'' + ", password='" + password + '\'' + ", passwordConfirmation='" + passwordConfirmation + '\'' + ", created=" + created + ", enabled=" + enabled + '}';
     }
 }

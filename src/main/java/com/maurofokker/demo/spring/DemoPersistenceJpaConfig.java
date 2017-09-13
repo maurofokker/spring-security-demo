@@ -6,6 +6,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 
 @Configuration
 @EnableJpaRepositories(basePackages = "com.maurofokker.demo.persistence")
-@EntityScan("com.maurofokker.demo.web.model")
+@EntityScan("com.maurofokker.demo.model")
 public class DemoPersistenceJpaConfig {
 }

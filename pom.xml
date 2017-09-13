@@ -71,6 +71,12 @@
 			<artifactId>spring-boot-devtools</artifactId>
 		</dependency>
 
+		<!-- for mail service -->
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-context-support</artifactId>
+		</dependency>
+
 		<!-- security -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -101,6 +107,18 @@
 		<!-- <artifactId>mysql-connector-java</artifactId> -->
 		<!-- <version>${mysql.version}</version> -->
 		<!-- </dependency> -->
+
+		<!-- mail -->
+
+		<dependency>
+			<groupId>javax.mail</groupId>
+			<artifactId>javax.mail-api</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>com.sun.mail</groupId>
+			<artifactId>javax.mail</artifactId>
+		</dependency>
 
 		<!-- common utilities -->
 
