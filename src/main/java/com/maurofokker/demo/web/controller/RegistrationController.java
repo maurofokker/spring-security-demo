@@ -188,7 +188,8 @@ class RegistrationController {
         SecurityContextHolder.getContext().setAuthentication(auth);
         // is creating a new auth, using the UsernamePasswordAuthenticationToken of spring security then is set in SecurityContextHolder
         // this authentication is required for the next operation when the user is actually been saved in db
-        return new ModelAndView("resetPassword");
+        return new ModelAndView("resetPassword", ImmutableMap.of("questions", securityQuestionDefinitionRepository.findAll()));
+        //return new ModelAndView("resetPassword");
     }
 
     /**
@@ -200,12 +201,24 @@ class RegistrationController {
      */
     @RequestMapping(value = "/user/savePassword", method = RequestMethod.POST)
     @ResponseBody
-    public ModelAndView savePassword(@RequestParam("password") final String password, @RequestParam("passwordConfirmation") final String passwordConfirmation, final RedirectAttributes redirectAttributes) {
+    public ModelAndView savePassword(@RequestParam("password") final String password, @RequestParam("passwordConfirmation") final String passwordConfirmation, @RequestParam final Long questionId, @RequestParam final String answer, final RedirectAttributes redirectAttributes) {
+        // check psw and send sec question
         if (!password.equals(passwordConfirmation)) {
-            return new ModelAndView("resetPassword", ImmutableMap.of("errorMessage", "Passwords do not match"));
+            final Map<String, Object> model = new HashMap<>();
+            model.put("errorMessage", "Passwords do not match");
+            model.put("questions", securityQuestionDefinitionRepository.findAll());
+            return new ModelAndView("resetPassword", model);
         }
         // principal authentication from security context
         final User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        if (securityQuestionRepository.findByQuestionDefinitionIdAndUserIdAndAnswer(questionId, user.getId(), answer) == null) {
+            final Map<String, Object> model = new HashMap<>();
+            model.put("errorMessage", "Answer to security question is incorrect");
+            model.put("questions", securityQuestionDefinitionRepository.findAll());
+            return new ModelAndView("resetPassword", model);
+        }
+
         userService.changeUserPassword(user, password);
         redirectAttributes.addFlashAttribute("message", "Password reset successfully");
         return new ModelAndView("redirect:/login");
