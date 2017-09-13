@@ -598,6 +598,116 @@ protected void configure(HttpSecurity http) throws Exception {
     ;
 }
 ```
+
+#### Security questions for registration and reset password validation
+1. Define security questions
+2. Security questions definition persistence with relation to user
+3. Add security questions to registration form
+4. Add security question to resgistration controller logic
+5. Use security question validation when reset password
+
+* Add entity with security question definitions
+```java
+@Entity
+public class SecurityQuestionDefinition {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column
+    @NotEmpty
+    private String text;
+    
+    // setter getters
+}
+```
+* Add entity with security questions relation with user and definitions
+```java
+@Entity
+public class SecurityQuestion {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    // relation with User
+    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false, name = "user_id", unique = true)
+    private User user;
+
+    // relation with Security Question Definition
+    @OneToOne(targetEntity = SecurityQuestionDefinition.class, fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false, name = "securityQuestionDefinition_id")
+    private SecurityQuestionDefinition questionDefinition;
+
+    private String answer;
+
+    public SecurityQuestion(final User user, final SecurityQuestionDefinition questionDefinition, final String answer) {
+        this.user = user;
+        this.questionDefinition = questionDefinition;
+        this.answer = answer;
+    }
+    
+    // setter getters
+}
+```
+
+* Repositories persistence for `SecurityQuestionDefinition` and `SecurityQuestion`
+```java
+public interface SecurityQuestionDefinitionRepository extends JpaRepository<SecurityQuestionDefinition, Long> {
+}
+```
+```java
+public interface SecurityQuestionRepository extends JpaRepository<SecurityQuestion, Long> {
+    // retrieve security question by question definition, user id and answer
+    SecurityQuestion findByQuestionDefinitionIdAndUserIdAndAnswer(Long questionDefinitionId, Long userId, String answer);
+}
+```
+
+* Registration logic with questions
+```java
+@RequestMapping(value = "signup")
+public ModelAndView registrationForm() {
+    Map<String, Object> model = new HashMap<>();
+    model.put("user", new User());
+    model.put("questions", securityQuestionDefinitionRepository.findAll());
+    return new ModelAndView("registrationPage", model);
+}
+```
+* Front will display questions
+```html
+<div class="form-group">
+    <label class="control-label col-xs-2" for="question">Security Question:</label>
+    <div class="col-xs-10">
+        <select id="question" name="questionId">
+            <option th:each="question : ${questions}"
+                    th:value="${question.id}"
+                    th:text="${question.text}">Question</option>
+        </select>
+    </div>
+</div>
+<div class="form-group">
+    <label class="control-label col-xs-2" for="answer">Answer</label>
+    <div class="col-xs-10">
+        <input id="answer" type="text" name="answer"/>
+    </div>
+</div>
+```
+* After persist user we need to persist question related to user. This should be in a single transaction (user creation and question persistence)
+```java
+final SecurityQuestionDefinition questionDefinition = securityQuestionDefinitionRepository.findOne(questionId);
+securityQuestionRepository.save(new SecurityQuestion(user, questionDefinition, answer));
+```
+* Secure password reset with security question related
+```java
+if (securityQuestionRepository.findByQuestionDefinitionIdAndUserIdAndAnswer(questionId, user.getId(), answer) == null) {
+    final Map<String, Object> model = new HashMap<>();
+    model.put("errorMessage", "Answer to security question is incorrect");
+    model.put("questions", securityQuestionDefinitionRepository.findAll());
+    return new ModelAndView("resetPassword", model);
+}
+```
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
