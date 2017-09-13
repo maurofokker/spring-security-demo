@@ -708,6 +708,43 @@ if (securityQuestionRepository.findByQuestionDefinitionIdAndUserIdAndAnswer(ques
     return new ModelAndView("resetPassword", model);
 }
 ```
+
+### Password strength for registration
+#### Secure strength password in Frontend
+* This will help the user to know if psw is secure in real time with feddback and save the hit to the backend for validation
+* Ensure resolution mechanism for static resources are able
+```java
+@Override
+public void addResourceHandlers(ResourceHandlerRegistry registry) {
+    registry.addResourceHandler("/**").addResourceLocations(new String[] { "classpath:/static/" });
+}
+```
+* Use the jquery (in this case) plugin  _jQuery Password Strength Meter for Twitter Bootstrap_ 
+```html
+<script src="/js/jquery-1.7.2.js"></script>
+<script src="/js/pwstrength.js"></script>
+```
+* Use of jquery plugin to attach password strength mechanism to password field in form
+```js
+<script type="text/javascript">
+    $(document).ready(function () {
+        options = {
+            common: {minChar:8},
+            ui: {
+                showVerdictsInsideProgressBar:true,
+                showErrors:true,
+                errorMessages:{
+                    wordLength: 'Your password is too short',
+                }
+            }
+        };
+        $('#password').pwstrength(options);
+    });
+</script>
+```
+* rool defined for psw strength is `common: {minChar:8}` there are more options
+
+
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)

@@ -13,11 +13,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurerAdapter
 @EnableWebMvc
 public class DemoWebConfig extends WebMvcConfigurerAdapter {
 
-    /*
-    public DemoWebConfig() {
-        super();
-    }
-    */
+    private static final String[] CLASSPATH_RESOURCE_LOCATIONS = { "classpath:/META-INF/resources/", "classpath:/resources/", "classpath:/static/", "classpath:/public/" };
 
     /**
      * replace @RequestMapping("/login") in PathController
@@ -30,10 +26,12 @@ public class DemoWebConfig extends WebMvcConfigurerAdapter {
         registry.setOrder(Ordered.HIGHEST_PRECEDENCE);
     }
 
+    /**
+     * resolution mechanism for static resources
+     * @param registry
+     */
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        if (!registry.hasMappingForPattern("/static/**")) {
-            registry.addResourceHandler("/static/**").addResourceLocations("classpath:/static/");
-        }
+        registry.addResourceHandler("/**").addResourceLocations(CLASSPATH_RESOURCE_LOCATIONS);
     }
 }
