@@ -54,6 +54,8 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
                             , "badUser*"
                             , "/forgotPassword*"
                             , "/user/resetPassword*"
+                            , "/user/changePassword*"
+                            , "/user/savePassword*"
                         ).permitAll() // give access to url and operation
                     .anyRequest().authenticated()
                 .and()

@@ -62,9 +62,20 @@ class UserService implements IUserService {
     }
 
     @Override
+    public void changeUserPassword(final User user, final String password) {
+        user.setPassword(password);
+        userRepository.save(user);
+    }
+
+    @Override
     public void createPasswordResetTokenForUser(final User user, final String token) {
         final PasswordResetToken myToken = new PasswordResetToken(token, user);
         passwordTokenRepository.save(myToken);
+    }
+
+    @Override
+    public PasswordResetToken getPasswordResetToken(final String token) {
+        return passwordTokenRepository.findByToken(token);
     }
 
 

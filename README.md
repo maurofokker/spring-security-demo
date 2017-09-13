@@ -423,7 +423,11 @@ public interface VerificationTokenRepository extends JpaRepository<VerificationT
 #### Forgot password
 * Add link to forgot password page
 * Add form to trigger reset password by email to `/user/resetPassword` API
-* Add Authorizarion request in security config for urls in antMatchers
+* Add view controller to accesss to `forgotPassword`
+```java
+registry.addViewController("/forgotPassword").setViewName("forgotPassword");
+```
+* Add urls `/forgotPassword` and `/user/resetPassword*`  to the allowed list
 ```java
 @Override
 protected void configure(HttpSecurity http) throws Exception {
@@ -527,7 +531,73 @@ public interface PasswordResetTokenRepository extends JpaRepository<PasswordRese
     PasswordResetToken findByToken(String token);
 }
 ```
+#### Reset password
+* Add controller method to show `reset password` page sent via email using the password reset token
+```java
+@RequestMapping(value = "/user/changePassword", method = RequestMethod.GET)
+public ModelAndView showChangePasswordPage(@RequestParam("id") final long id, @RequestParam("token") final String token, final RedirectAttributes redirectAttributes) {
+    final PasswordResetToken passToken = userService.getPasswordResetToken(token);
+    if (passToken == null) {
+        redirectAttributes.addFlashAttribute("errorMessage", "Invalid password reset token");
+        return new ModelAndView("redirect:/login");
+    }
+    // retrieve user with passToken
 
+    // check if password reset token is expired
+
+    // create nee authentication with UsernamePasswordAuthenticationToken
+    final Authentication auth = new UsernamePasswordAuthenticationToken(user, null, userDetailsService.loadUserByUsername(user.getEmail()).getAuthorities());
+    // set the principal auth for the context of the next operation where is going to be save in db
+    SecurityContextHolder.getContext().setAuthentication(auth);
+    
+    // return to resetPassword page where user must enter new password
+    return new ModelAndView("resetPassword");
+}
+```
+* Add `resetPassword.html` to reset password
+* Add controller method triggered when user send new password
+```java
+@RequestMapping(value = "/user/savePassword", method = RequestMethod.POST)
+@ResponseBody
+public ModelAndView savePassword(@RequestParam("password") final String password, @RequestParam("passwordConfirmation") final String passwordConfirmation, final RedirectAttributes redirectAttributes) {
+    if (!password.equals(passwordConfirmation)) {
+        return new ModelAndView("resetPassword", ImmutableMap.of("errorMessage", "Passwords do not match"));
+    }
+    // principal authentication from security context
+    final User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    userService.changeUserPassword(user, password);
+    redirectAttributes.addFlashAttribute("message", "Password reset successfully");
+    return new ModelAndView("redirect:/login");
+}
+```
+* Add urls `/user/changePassword` and `/user/savePassword`  to the allowed list
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+            .authorizeRequests()
+                .antMatchers("/signup"
+                        , "/user/register"
+                        , "/registrationConfirm*"
+                        , "badUser*"
+                        , "/forgotPassword*"
+                        , "/user/resetPassword*"
+                        , "/user/changePassword*"
+                        , "/user/savePassword*"
+                    ).permitAll() // give access to url and operation
+                .anyRequest().authenticated()
+            .and()
+            .formLogin()
+                .loginPage("/login").permitAll() // login form page, exception to be available for people not logged in
+                .loginProcessingUrl("/doLogin") // login proccesion url where authentication happens
+            .and()
+            .logout()
+                .permitAll().logoutUrl("/logout")
+            .and()
+            .csrf().disable()
+    ;
+}
+```
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)

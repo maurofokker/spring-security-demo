@@ -1,5 +1,7 @@
 package com.maurofokker.demo.web.controller;
 
+import com.google.common.collect.ImmutableMap;
+import com.maurofokker.demo.model.PasswordResetToken;
 import com.maurofokker.demo.model.VerificationToken;
 import com.maurofokker.demo.registration.OnRegistrationCompleteEvent;
 import com.maurofokker.demo.service.IUserService;
@@ -12,6 +14,10 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.core.env.Environment;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -43,6 +49,9 @@ class RegistrationController {
 
     @Autowired
     private Environment env;
+
+    @Autowired
+    private UserDetailsService userDetailsService;
 
     // registration
 
@@ -103,6 +112,13 @@ class RegistrationController {
 
     // password reset
 
+    /**
+     * This require the password reset when user forgot it
+     * @param request
+     * @param userEmail
+     * @param redirectAttributes
+     * @return
+     */
     @RequestMapping(value = "/user/resetPassword", method = RequestMethod.POST)
     @ResponseBody
     public ModelAndView resetPassword(final HttpServletRequest request, @RequestParam("email") final String userEmail, final RedirectAttributes redirectAttributes) {
@@ -116,6 +132,61 @@ class RegistrationController {
         }
 
         redirectAttributes.addFlashAttribute("message", "You should receive an Password Reset Email shortly");
+        return new ModelAndView("redirect:/login");
+    }
+
+    /**
+     * This show resetPassword page using the password reset token sent to the user
+     * @param id
+     * @param token
+     * @param redirectAttributes
+     * @return
+     */
+    @RequestMapping(value = "/user/changePassword", method = RequestMethod.GET)
+    public ModelAndView showChangePasswordPage(@RequestParam("id") final long id, @RequestParam("token") final String token, final RedirectAttributes redirectAttributes) {
+        final PasswordResetToken passToken = userService.getPasswordResetToken(token);
+        if (passToken == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Invalid password reset token");
+            return new ModelAndView("redirect:/login");
+        }
+        final User user = passToken.getUser();
+        if (user.getId() != id) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Invalid password reset token");
+            return new ModelAndView("redirect:/login");
+        }
+
+        final Calendar cal = Calendar.getInstance();
+        if ((passToken.getExpiryDate().getTime() - cal.getTime().getTime()) <= 0) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Your password reset token has expired");
+            return new ModelAndView("redirect:/login");
+        }
+
+        // get the principal and authorities for authentication
+        final Authentication auth = new UsernamePasswordAuthenticationToken(user, null, userDetailsService.loadUserByUsername(user.getEmail()).getAuthorities());
+        // set the principal auth for the context of the next operation
+        SecurityContextHolder.getContext().setAuthentication(auth);
+        // is creating a new auth, using the UsernamePasswordAuthenticationToken of spring security then is set in SecurityContextHolder
+        // this authentication is required for the next operation when the user is actually been saved in db
+        return new ModelAndView("resetPassword");
+    }
+
+    /**
+     * Operation triggered when user submits new password
+     * @param password
+     * @param passwordConfirmation
+     * @param redirectAttributes
+     * @return
+     */
+    @RequestMapping(value = "/user/savePassword", method = RequestMethod.POST)
+    @ResponseBody
+    public ModelAndView savePassword(@RequestParam("password") final String password, @RequestParam("passwordConfirmation") final String passwordConfirmation, final RedirectAttributes redirectAttributes) {
+        if (!password.equals(passwordConfirmation)) {
+            return new ModelAndView("resetPassword", ImmutableMap.of("errorMessage", "Passwords do not match"));
+        }
+        // principal authentication from security context
+        final User user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        userService.changeUserPassword(user, password);
+        redirectAttributes.addFlashAttribute("message", "Password reset successfully");
         return new ModelAndView("redirect:/login");
     }
 
