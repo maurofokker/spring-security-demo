@@ -423,6 +423,32 @@ public interface VerificationTokenRepository extends JpaRepository<VerificationT
 #### Forgot password
 * Add link to forgot password page
 * Add form to trigger reset password by email to `/user/resetPassword` API
+* Add Authorizarion request in security config for urls in antMatchers
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+            .authorizeRequests()
+                .antMatchers("/signup"
+                        , "/user/register" 
+                        , "/registrationConfirm*"
+                        , "badUser*"
+                        , "/forgotPassword*"
+                        , "/user/resetPassword*"
+                    ).permitAll() // give access to url and operation
+                .anyRequest().authenticated()
+            .and()
+            .formLogin()
+                .loginPage("/login").permitAll() // login form page, exception to be available for people not logged in
+                .loginProcessingUrl("/doLogin") // login proccesion url where authentication happens
+            .and()
+            .logout()
+                .permitAll().logoutUrl("/logout")
+            .and()
+            .csrf().disable()
+    ;
+}
+```
 * Implementation of reset password logic
     * Controller receive reset password request
     * Load user by email
