@@ -16,4 +16,6 @@ public interface IUserService {
 
     void saveRegisteredUser(User user);
 
+    void createPasswordResetTokenForUser(User user, String token);
+
 }

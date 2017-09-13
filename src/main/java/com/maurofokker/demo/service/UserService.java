@@ -1,6 +1,8 @@
 package com.maurofokker.demo.service;
 
+import com.maurofokker.demo.model.PasswordResetToken;
 import com.maurofokker.demo.model.VerificationToken;
+import com.maurofokker.demo.persistence.PasswordResetTokenRepository;
 import com.maurofokker.demo.persistence.UserRepository;
 import com.maurofokker.demo.persistence.VerificationTokenRepository;
 import com.maurofokker.demo.validation.EmailExistsException;
@@ -22,6 +24,9 @@ class UserService implements IUserService {
 
     @Autowired
     private VerificationTokenRepository verificationTokenRepository;
+
+    @Autowired
+    private PasswordResetTokenRepository passwordTokenRepository;
 
     //
 
@@ -55,6 +60,13 @@ class UserService implements IUserService {
     public void saveRegisteredUser(final User user) {
         userRepository.save(user);
     }
+
+    @Override
+    public void createPasswordResetTokenForUser(final User user, final String token) {
+        final PasswordResetToken myToken = new PasswordResetToken(token, user);
+        passwordTokenRepository.save(myToken);
+    }
+
 
     //
 

@@ -170,6 +170,100 @@ protected void configure(HttpSecurity http) throws Exception {
 * Anonymous authentication token is going to be available whenever a real principal, an authenticated principal, is not available
     * For example, if the audit code is using the principal out of the Spring Security authentication, there is no need to write special code, and there is no need to do null checking or any other checks on the authentication, and everything is going to be working out of the box
 
+## Add persistence configuration
+* Dependency for spring data and spring boot is easy
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-data-jpa</artifactId>
+</dependency>
+```
+* For development and test is good to use in memory data bases like hsql
+```xml
+<dependency>
+	<groupId>org.hsqldb</groupId>
+	<artifactId>hsqldb</artifactId>
+	<scope>runtime</scope>
+</dependency>
+<!-- <dependency> -->
+<!-- <groupId>mysql</groupId> -->
+<!-- <artifactId>mysql-connector-java</artifactId> -->
+<!-- <version>${mysql.version}</version> -->
+<!-- </dependency> -->
+```
+
+* Configuration is done with java annotations 
+```java
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+
+@Configuration
+@EnableJpaRepositories(basePackages = "com.maurofokker.demo.persistence")
+@EntityScan("com.maurofokker.demo.web.model")
+public class DemoPersistenceJpaConfig {
+}
+```
+* Entities are annotated 
+```java
+import org.hibernate.validator.constraints.NotEmpty;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import java.util.Calendar;
+
+@Entity
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @NotEmpty(message = "Username is required.")
+    private String username;
+
+    @NotEmpty(message = "Email is required.")
+    private String email;
+
+    private Calendar created = Calendar.getInstance();
+
+    // getters and setters
+}
+```
+* For crud operations spring data comes with handy functions out of the box
+```java
+import com.maurofokker.demo.model.User;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+public interface UserRepository extends JpaRepository<User, Long> {
+}
+```
+* `JpaRepository` and `MongoRepository` interfaces extend `CrudRepository` It takes the domain class to manage as well as the id type of the domain class as type arguments
+  The `CrudRepository` provides sophisticated CRUD functionality for the entity class that is being managed
+
+* `CrudRepository` interface
+```java
+public interface CrudRepository<T, ID extends Serializable>
+    extends Repository<T, ID> {
+
+    <S extends T> S save(S entity); 
+
+    T findOne(ID primaryKey);       
+
+    Iterable<T> findAll();          
+
+    Long count();                   
+
+    void delete(T entity);          
+
+    boolean exists(ID primaryKey);  
+
+    // … more functionality omitted.
+}
+```
+
 ## Registration flow with spring security
 
 ### Simple registration form
@@ -303,7 +397,18 @@ public interface VerificationTokenRepository extends JpaRepository<VerificationT
     VerificationToken findByToken(String token);
 }
 ```
-* User is created disabled
+* User is `disabled` by default when created
+* When created user is loaded and wired it with spring security user details service, account status (`enable`) is get from the user entity
+```java
+@Override
+    public UserDetails loadUserByUsername(final String email) throws UsernameNotFoundException {
+        final User user  = userRepository.findByEmail(email);
+        if (user == null) {
+            throw new UsernameNotFoundException("No user found with email: " + email);
+        }
+        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), user.getEnabled(), true, true, true, getAuthorities("ROLE_USER"));
+    }
+```
 * During registration controller is sent an event to notify the newly created user (`RegistrationContoller.registerUser`)
 * Event is received by a listener that will send a verification email to new user to confirm registration (`RegistrationListener`)
     * Token is created
@@ -314,99 +419,89 @@ public interface VerificationTokenRepository extends JpaRepository<VerificationT
     * Set user enabled in db
     * Redirect to login page
 
-## Persistence configuration
-* Dependency for spring data and spring boot is easy
-```xml
-<dependency>
-    <groupId>org.springframework.boot</groupId>
-    <artifactId>spring-boot-starter-data-jpa</artifactId>
-</dependency>
-```
-* For development and test is good to use in memory data bases like hsql
-```xml
-<dependency>
-	<groupId>org.hsqldb</groupId>
-	<artifactId>hsqldb</artifactId>
-	<scope>runtime</scope>
-</dependency>
-<!-- <dependency> -->
-<!-- <groupId>mysql</groupId> -->
-<!-- <artifactId>mysql-connector-java</artifactId> -->
-<!-- <version>${mysql.version}</version> -->
-<!-- </dependency> -->
-```
-
-* Configuration is done with java annotations 
+### Forgot/Reset Password
+#### Forgot password
+* Add link to forgot password page
+* Add form to trigger reset password by email to `/user/resetPassword` API
+* Implementation of reset password logic
+    * Controller receive reset password request
+    * Load user by email
+    * If user exists, create password reset token for user (this is different token from creation because manage expiration)
+    * Token is send to user via Email just like confirmation
+    * TODO: this step could be managed by event and listener
 ```java
-import org.springframework.boot.autoconfigure.domain.EntityScan;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+@RequestMapping(value = "/user/resetPassword", method = RequestMethod.POST)
+@ResponseBody
+public ModelAndView resetPassword(final HttpServletRequest request, @RequestParam("email") final String userEmail, final RedirectAttributes redirectAttributes) {
+    final User user = userService.findUserByEmail(userEmail);
+    if (user != null) {
+        final String token = UUID.randomUUID().toString();
+        userService.createPasswordResetTokenForUser(user, token);
+        final String appUrl = "http://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
+        final SimpleMailMessage email = constructResetTokenEmail(appUrl, token, user);
+        mailSender.send(email);
+    }
 
-@Configuration
-@EnableJpaRepositories(basePackages = "com.maurofokker.demo.persistence")
-@EntityScan("com.maurofokker.demo.web.model")
-public class DemoPersistenceJpaConfig {
+    redirectAttributes.addFlashAttribute("message", "You should receive an Password Reset Email shortly");
+    return new ModelAndView("redirect:/login");
 }
 ```
-* Entities are annotated 
+* Service method for token reset creation
 ```java
-import org.hibernate.validator.constraints.NotEmpty;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import java.util.Calendar;
-
+@Override
+public void createPasswordResetTokenForUser(final User user, final String token) {
+    final PasswordResetToken myToken = new PasswordResetToken(token, user);
+    passwordTokenRepository.save(myToken);
+}
+```
+* `PasswordResetToken` entity to control lifetime expiration of token
+```java
 @Entity
-public class User {
+public class PasswordResetToken {
+
+    private static final int EXPIRATION = 60 * 24;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
 
-    @NotEmpty(message = "Username is required.")
-    private String username;
+    private String token;
 
-    @NotEmpty(message = "Email is required.")
-    private String email;
+    @OneToOne(targetEntity = User.class, fetch = FetchType.EAGER)
+    @JoinColumn(nullable = false, name = "user_id")
+    private User user;
 
-    private Calendar created = Calendar.getInstance();
+    private Date expiryDate;
 
-    // getters and setters
+    public PasswordResetToken() {
+        super();
+    }
+
+    public PasswordResetToken(final String token, final User user) {
+        super();
+
+        this.token = token;
+        this.user = user;
+        this.expiryDate = calculateExpiryDate(EXPIRATION);
+    }
+
+    // setter and getters
+
+    private Date calculateExpiryDate(final int expiryTimeInMinutes) {
+        final Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(new Date().getTime());
+        cal.add(Calendar.MINUTE, expiryTimeInMinutes);
+        return new Date(cal.getTime().getTime());
+    }
 }
 ```
-* For crud operations spring data comes with handy functions out of the box
+* Persistence repo for PasswordResetToken
 ```java
-import com.maurofokker.demo.model.User;
-import org.springframework.data.jpa.repository.JpaRepository;
-
-public interface UserRepository extends JpaRepository<User, Long> {
+public interface PasswordResetTokenRepository extends JpaRepository<PasswordResetToken, Long> {
+    PasswordResetToken findByToken(String token);
 }
 ```
-* `JpaRepository` and `MongoRepository` interfaces extend `CrudRepository` It takes the domain class to manage as well as the id type of the domain class as type arguments
-  The `CrudRepository` provides sophisticated CRUD functionality for the entity class that is being managed
 
-* `CrudRepository` interface
-```java
-public interface CrudRepository<T, ID extends Serializable>
-    extends Repository<T, ID> {
-
-    <S extends T> S save(S entity); 
-
-    T findOne(ID primaryKey);       
-
-    Iterable<T> findAll();          
-
-    Long count();                   
-
-    void delete(T entity);          
-
-    boolean exists(ID primaryKey);  
-
-    // … more functionality omitted.
-}
-```
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
