@@ -1,6 +1,7 @@
 package com.maurofokker.demo.model;
 
 import com.maurofokker.demo.validation.PasswordMatches;
+import com.maurofokker.demo.validation.ValidPassword;
 import org.hibernate.validator.constraints.Email;
 import org.hibernate.validator.constraints.NotEmpty;
 
@@ -19,6 +20,8 @@ public class User {
     @NotEmpty(message = "Username is required.")
     private String email;
 
+    // use annotation to validate passw
+    @ValidPassword
     @NotEmpty(message = "Password is required.")
     private String password;
 

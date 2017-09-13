@@ -710,6 +710,8 @@ if (securityQuestionRepository.findByQuestionDefinitionIdAndUserIdAndAnswer(ques
 ```
 
 ### Password strength for registration
+* Should be done in both, frontend and backend
+* Should give immediate feedback to user about strength of the password
 #### Secure strength password in Frontend
 * This will help the user to know if psw is secure in real time with feddback and save the hit to the backend for validation
 * Ensure resolution mechanism for static resources are able
@@ -742,9 +744,97 @@ public void addResourceHandlers(ResourceHandlerRegistry registry) {
     });
 </script>
 ```
-* rool defined for psw strength is `common: {minChar:8}` there are more options
+* rule defined for psw strength is `common: {minChar:8}` there are more options
 
+#### Secure strength password in Backend
+* It is good to verify password strength rules in the backend too
+* Dependency for password validation library
+```xml
+<!-- Password Validation -->
+<dependency>
+    <groupId>org.passay</groupId>
+    <artifactId>passay</artifactId>
+    <version>1.0</version>
+</dependency>
+```
+* Good way is define a custom validator for the password and add logic in that validator. And this is going to be annotated in password field of entity
+```java
+/**
+ * This is the annotation (will go on password field of entity)
+ */
+@Documented
+@Constraint(validatedBy = PasswordConstraintValidator.class)
+@Target({ TYPE, FIELD, ANNOTATION_TYPE })
+@Retention(RUNTIME)
+public @interface ValidPassword {
 
+    String message() default "Invalid Password";
+
+    Class<?>[] groups() default {};
+
+    Class<? extends Payload>[] payload() default {};
+
+}
+```
+
+```java
+/**
+* This is the logic of validation using passay (logic of annotation)
+*/
+public class PasswordConstraintValidator implements ConstraintValidator<ValidPassword, String> {
+
+    @Override
+    public void initialize(final ValidPassword arg0) {
+    }
+
+    @Override
+    public boolean isValid(final String password, final ConstraintValidatorContext context) {
+        // length rule btw 8 and 30 chars, ...
+        final PasswordValidator validator = new PasswordValidator(Arrays.asList(new LengthRule(8, 30), new UppercaseCharacterRule(1), new DigitCharacterRule(1), new SpecialCharacterRule(1), new WhitespaceRule()));
+        final RuleResult result = validator.validate(new PasswordData(password));
+        if (result.isValid()) {
+            return true;
+        }
+        // if validation is false add information to validation context, so frontend can displey that
+        context.disableDefaultConstraintViolation();
+        // API to add custom message that represents a constraint violation... that information is in the result
+        context.buildConstraintViolationWithTemplate(Joiner.on("\n").join(validator.getMessages(result))).addConstraintViolation();
+        return false;
+    }
+
+}
+```
+* Use annotation to validate password on user entity
+```java
+@Entity
+@PasswordMatches
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Email
+    @NotEmpty(message = "Username is required.")
+    private String email;
+
+    // use annotation to validate password
+    @ValidPassword
+    @NotEmpty(message = "Password is required.")
+    private String password;
+
+    @Transient
+    @NotEmpty(message = "Password confirmation is required.")
+    private String passwordConfirmation;
+
+    @Column
+    private Boolean enabled;
+
+    private Calendar created = Calendar.getInstance();
+    
+    // setters getters
+}
+```
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
