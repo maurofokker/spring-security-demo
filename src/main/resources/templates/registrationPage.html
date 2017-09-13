@@ -36,6 +36,22 @@
                 <span th:if="${#fields.hasErrors('passwordConfirmation')}" th:errors="*{passwordConfirmation}" class="help-block">Password Confirmation Error</span>
             </div>
         </div>
+        <!-- add security questions -->
+        <div class="form-group">
+            <label class="control-label col-xs-2" for="question">Security Question:</label>
+            <div class="col-xs-10">
+                <select id="question" name="questionId">
+                    <option th:each="question : ${questions}" th:value="${question.id}" th:text="${question.text}">Question</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="control-label col-xs-2" for="answer">Answer</label>
+            <div class="col-xs-10">
+                <input id="answer" type="text" name="answer" />
+            </div>
+        </div>
+
         <div class="form-actions col-xs-offset-2 col-xs-10">
             <input type="submit" class="btn btn-primary" value="Register"/>
         </div>

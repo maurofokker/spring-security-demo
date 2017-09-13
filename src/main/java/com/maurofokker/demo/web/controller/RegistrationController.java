@@ -1,12 +1,12 @@
 package com.maurofokker.demo.web.controller;
 
 import com.google.common.collect.ImmutableMap;
-import com.maurofokker.demo.model.PasswordResetToken;
-import com.maurofokker.demo.model.VerificationToken;
+import com.maurofokker.demo.model.*;
+import com.maurofokker.demo.persistence.SecurityQuestionDefinitionRepository;
+import com.maurofokker.demo.persistence.SecurityQuestionRepository;
 import com.maurofokker.demo.registration.OnRegistrationCompleteEvent;
 import com.maurofokker.demo.service.IUserService;
 import com.maurofokker.demo.validation.EmailExistsException;
-import com.maurofokker.demo.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +32,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.Valid;
 import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Controller
@@ -53,32 +55,51 @@ class RegistrationController {
     @Autowired
     private UserDetailsService userDetailsService;
 
+    @Autowired
+    private SecurityQuestionDefinitionRepository securityQuestionDefinitionRepository;
+
+    @Autowired
+    private SecurityQuestionRepository securityQuestionRepository;
+
     // registration
 
     /**
-     * ensure the links btw /signup and registrationPage.html template
+     * use map to add user and questions to the model
+     * in this way associate questions to user registration
      * @return a User in the model
      */
     @RequestMapping(value = "signup")
     public ModelAndView registrationForm() {
-        return new ModelAndView("registrationPage", "user", new User());
+        final Map<String, Object> model = new HashMap<>();
+        model.put("user", new User());
+        model.put("questions", securityQuestionDefinitionRepository.findAll()); // to display sec questions
+        return new ModelAndView("registrationPage", model);
+        //return new ModelAndView("registrationPage", "user", new User());
     }
 
     /**
      * Implements the register operation
      *
      * @param user
+     * @param questionId
+     * @param answer
      * @param result
      * @return
      */
     @RequestMapping(value = "user/register")
-    public ModelAndView registerUser(@Valid final User user, final BindingResult result, final HttpServletRequest request) {
+    public ModelAndView registerUser(@Valid final User user, final @RequestParam Long questionId, @RequestParam final String answer, final BindingResult result, final HttpServletRequest request) {
         log.info("user registration received!...");
         if (result.hasErrors()) {
             return new ModelAndView("registrationPage", "user", user);
         }
         try {
             final User registered = userService.registerNewUser(user);
+
+            // info: save recurity questions after save the user
+            // todo: move this logic to service layer
+            // todo: ensure that user registration and security question are part of a single transaction
+            final SecurityQuestionDefinition questionDefinition = securityQuestionDefinitionRepository.findOne(questionId);
+            securityQuestionRepository.save(new SecurityQuestion(user, questionDefinition, answer));
 
             final String appUrl = "http://" + request.getServerName() + ":" + request.getServerPort() + request.getContextPath();
             eventPublisher.publishEvent(new OnRegistrationCompleteEvent(registered, appUrl));
