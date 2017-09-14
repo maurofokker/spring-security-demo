@@ -1,32 +1,33 @@
 package com.maurofokker.demo.spring;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
 @Configuration
 @EnableWebSecurity
+@ComponentScan({ "com.maurofokker.demo.security" })
 public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
 
+    @Autowired
+    private UserDetailsService userDetailsService;
     //
 
     /**
-     * change the global configuration
-     * - disable basic auth config
-     * - replace basic auth with default login form config (auto generated in this case)
-     * - is possible to override auto generated form
+     * wire userDetailsService into authentication config
+     * remove in memory
+     * this allow to register and then authenticate the new user
      * @param auth
      * @throws Exception
      */
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { // @formatter:off
-        auth.
-                inMemoryAuthentication().
-                withUser("user").password("password").
-                roles("USER");
+        auth.userDetailsService(userDetailsService);
     } // @formatter:on
 
     /**
@@ -47,6 +48,16 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
     protected void configure(HttpSecurity http) throws Exception {
         http
                 .authorizeRequests()
+                    .antMatchers("/signup"
+                            , "/user/register"
+                            , "/registrationConfirm*"
+                            , "badUser*"
+                            , "/forgotPassword*"
+                            , "/user/resetPassword*"
+                            , "/user/changePassword*"
+                            , "/user/savePassword*"
+                            , "/js/**"
+                        ).permitAll() // give access to url and operation
                     .anyRequest().authenticated()
                 .and()
                 .formLogin()

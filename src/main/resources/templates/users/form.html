@@ -17,14 +17,14 @@
 			<div class="pull-right">
 				<a th:href="@{/user/}" href="users.html"> Users </a>
 			</div>
-			<input type="hidden" th:field="*{id}"
-				th:class="${#fields.hasErrors('id')} ? 'field-error'" /> <label
-				for="username">Username</label> <input type="text"
-				th:field="*{username}"
-				th:class="${#fields.hasErrors('username')} ? 'field-error'" /> <label
-				for="email">Email</label>
-			<input type="email" th:field="*{email}"
-				th:class="${#fields.hasErrors('email')} ? 'field-error'"/>
+			<input type="hidden" th:field="*{id}" th:class="${#fields.hasErrors('id')} ? 'field-error'" />
+
+			<label for="email">Email</label>
+			<input type="email" th:field="*{email}" th:class="${#fields.hasErrors('email')} ? 'field-error'" />
+			<label for="password">Password</label>
+			<input type="password" th:field="*{password}" th:class="${#fields.hasErrors('password')} ? 'field-error'" />
+			<label for="passwordConfirmation">Password Confirmation</label>
+			<input type="password" th:field="*{passwordConfirmation}" th:class="${#fields.hasErrors('passwordConfirmation')} ? 'field-error'" />
 			<div class="form-actions">
 				<input type="submit" value="Save" />
 			</div>

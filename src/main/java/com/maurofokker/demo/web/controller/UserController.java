@@ -1,10 +1,13 @@
 package com.maurofokker.demo.web.controller;
 
 import com.maurofokker.demo.persistence.UserRepository;
-import com.maurofokker.demo.web.model.User;
+import com.maurofokker.demo.service.IUserService;
+import com.maurofokker.demo.validation.EmailExistsException;
+import com.maurofokker.demo.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -18,14 +21,13 @@ import javax.validation.Valid;
 @RequestMapping("/user")
 public class UserController {
 
-    private final UserRepository userRepository;
-
-    //
+    @Autowired
+    private UserRepository userRepository;
 
     @Autowired
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private IUserService userService;
+
+    //
 
     @RequestMapping
     public ModelAndView list() {
@@ -34,7 +36,7 @@ public class UserController {
     }
 
     @RequestMapping("{id}")
-    public ModelAndView view(@PathVariable("id") User user) {
+    public ModelAndView view(@PathVariable("id") final User user) {
         return new ModelAndView("users/view", "user", user);
     }
 
@@ -44,11 +46,16 @@ public class UserController {
     }
 
     @RequestMapping(method = RequestMethod.POST)
-    public ModelAndView create(@Valid User user, BindingResult result, RedirectAttributes redirect) {
+    public ModelAndView create(@Valid final User user, BindingResult result, RedirectAttributes redirect) {
         if (result.hasErrors()) {
             return new ModelAndView("users/form", "formErrors", result.getAllErrors());
         }
-        user = this.userRepository.save(user);
+        try {
+            userService.registerNewUser(user);
+        } catch (EmailExistsException e) {
+            result.addError(new FieldError("user", "email", e.getMessage()));
+            return new ModelAndView("users/form", "user", user);
+        }
         redirect.addFlashAttribute("globalMessage", "Successfully created a new user");
         return new ModelAndView("redirect:/user/{user.id}", "user.id", user.getId());
     }
