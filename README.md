@@ -835,6 +835,32 @@ public class User {
     // setters getters
 }
 ```
+## Remember me flow with spring security
+### Basic configuration
+* Backend configuration in `configure(HttpSecurity http)` method
+```java
+.and().rememberMe()
+```
+* Frontend configuration is a checkbox in loginpage
+```html
+<div class="form-group">
+    <label class="control-label col-xs-2" for="remember"> Remember Me? </label>
+    <div class="col-xs-10">
+        <input id="remember" type="checkbox" name="remember-me" value="true" />
+    </div>
+</div>
+```
+* Considerations
+    1. basic remember me adds a new cookie `remember` in the browser in addition to `JSESSION`
+    2. if `JSESSION` cookie is removed in a *no-remember-me* session then user will be redirected to login page when page is reloaded
+    3. if `JSESSION` cookie is removed in a *remember-me* session then user will not be redirected to login page when page is reloaded
+    4. remember me cookie lives 2 weeks by default
+    5. default cookie es `remember-me` and should go in name attribute of checkbox
+    6. other parameters are allowed to change default behavior 
+     ```java
+        .rememberMe().tokenValiditySeconds(604800).key("demosecapp").rememberMeCookieName("sticky-cookie").rememberMeParameter("remember")
+     ```
+
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)

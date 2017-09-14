@@ -66,12 +66,14 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .logout()
                     .permitAll().logoutUrl("/logout")
-                    //.logoutRequestMatcher(new AntPathRequestMatcher("/doLogout", "GET"))
-                        //.clearAuthentication()
-                        //.deleteCookies()
-                        //.invalidateHttpSession()
-                        //.logoutSuccessHandler()
-                        //.logoutSuccessUrl()
+
+                .and()
+                .rememberMe()
+                    .tokenValiditySeconds(604800)
+                    .key("demosecapp")
+                    .rememberMeCookieName("sticky-cookie")
+                    .rememberMeParameter("remember")
+
                 .and()
                 .csrf().disable()
         ;
