@@ -1,6 +1,7 @@
 package com.maurofokker.demo.spring;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -8,6 +9,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
+import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
+
+import javax.sql.DataSource;
 
 @Configuration
 @EnableWebSecurity
@@ -15,7 +20,14 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
+    private DataSource dataSource;
+
+    @Autowired
     private UserDetailsService userDetailsService;
+
+    public BasicSecurityConfig() {
+        super();
+    }
     //
 
     /**
@@ -66,14 +78,28 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .logout()
                     .permitAll().logoutUrl("/logout")
-                    //.logoutRequestMatcher(new AntPathRequestMatcher("/doLogout", "GET"))
-                        //.clearAuthentication()
-                        //.deleteCookies()
-                        //.invalidateHttpSession()
-                        //.logoutSuccessHandler()
-                        //.logoutSuccessUrl()
+
+                .and()
+                .rememberMe()
+                    .key("demosecapp")
+                    .tokenValiditySeconds(604800) // 1 week = 604800
+                    .tokenRepository(persistentTokenRepository())
+                    .rememberMeParameter("remember")
+
                 .and()
                 .csrf().disable()
         ;
+    }
+
+    /**
+     * using the JdbcTokenRepositoryImpl of PersistentTokenRepository
+     * PersistentTokenRepository has 2 implementatios, this one and InMemoryTokenRespositoryImpl (default)
+     * @return
+     */
+    @Bean
+    public PersistentTokenRepository persistentTokenRepository() {
+        final JdbcTokenRepositoryImpl jdbcTokenRepository = new JdbcTokenRepositoryImpl();
+        jdbcTokenRepository.setDataSource(dataSource); // to connect to db
+        return  jdbcTokenRepository;
     }
 }
