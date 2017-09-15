@@ -836,6 +836,13 @@ public class User {
 }
 ```
 ## Remember me flow with spring security
+* Logical flow
+1. User request use `RememberMeAuthenticationFilter`
+2. if `check cookie` is ok then go to next step `decode cookie` else go to next filter
+3. if `decode cookie` is ok then go to next step `validate cookie` else throw exception
+4. if `validate cookie` is ok then go to next step `check user account` else throw exception
+5. if `check user account` is ok then `create authentication token` and go to next filter
+
 ### Basic configuration
 * Backend configuration in `configure(HttpSecurity http)` method
 ```java
@@ -879,7 +886,39 @@ key:               A private key to prevent modification of the remember-me toke
   * `.useSecureCookie(true)`: secure the cookie so the cookie is no longer being sent for unsecured connections. In local development is better not to use it because HTTPS. The cookie will existing but will simply be ignored and have no effect.
   * `.rememberMeCookieName("sticky-cookie")`: change the name of the cookie, from the default value of remember-me to any other, the reaon to change the name is to not expose any of the underlying details of the framework we are using to secure our application.
   * `.rememberMeParameter("remember")`: change default value remember-me for the same reason above
-  
+
+### Persistent token configuration
+* This is more secure than cookie remember-me because only the `username` is present in the cookie, in other case the `password` is used too
+* If something bad happen and cookie is compromised, just delete token in db
+* In security config should wire up `DataSource` bean 
+* Persistence token is done using the `JdbcTokenRepositoryImpl` of `PersistentTokenRepository` and setting `datasource`
+```java
+@Autowired
+private DataSource dataSource;
+
+@Bean
+public PersistentTokenRepository persistentTokenRepository() {
+    JdbcTokenRepositoryImpl jdbcTokenRepository = new JdbcTokenRepositoryImpl();
+    jdbcTokenRepository.setDataSource(dataSource);
+    return jdbcTokenRepository;
+}
+```
+* Remember me persistence is done by adding `.tokenRepository(persistentTokenRepository())` in `configure(HttpSecurity http)` method
+```java
+.rememberMe()
+    .key("demosecapp")
+    .tokenValiditySeconds(604800) // 1 week = 604800
+    .tokenRepository(persistentTokenRepository())
+    .rememberMeParameter("remember")
+```
+* Table structure for persistence should be like this (according to [documentation](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#remember-me-persistent-token))
+```sql
+create table persistent_logins (username varchar(64) not null,
+								series varchar(64) primary key,
+								token varchar(64) not null,
+								last_used timestamp not null)
+```
+
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
