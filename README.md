@@ -959,6 +959,15 @@ user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-
 ```
 * User service that save password shoul wire up `PasswordEncoder` and encode password
 
+### Using SALTS to encoding
+* SALT can be saved in db, dont need to be hidden
+* SALT should be unique per credential
+* SALT should be fixed length
+* SALT should be cryptographically strong random value
+
+* Spring security `StandardPasswordEncoder` implementation uses a SALT by default that is secure `class SecureRandomBytesKeyGenerator implements BytesKeyGenerator`
+    * This SALT implementation meet above conditions
+
 ## Troubleshootings
 
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
@@ -980,6 +989,10 @@ user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-
 6 [Registration form](http://www.baeldung.com/spring-security-registration)
 
 7 [Remember me hash token](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#remember-me-hash-token)
+
+8 [Password encoding](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-password-encoding)
+
+9 [Salt to hash](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#adding-salt-to-a-hash)
 ### Persistence
 
 1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
