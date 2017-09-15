@@ -9,13 +9,13 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.encoding.Md5PasswordEncoder;
-import org.springframework.security.authentication.encoding.PasswordEncoder;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.StandardPasswordEncoder;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 
@@ -44,17 +44,20 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
 
     //
 
+
     @PostConstruct
     private void saveTestUser() {
         final User user = new User();
         user.setEmail("test@mail.com");
-        user.setPassword(passwordEncoder().encodePassword("password", null));
+        // user.setPassword(passwordEncoder().encodePassword("password", null)); // md5 deprecated password encoder
+        user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-256
         userRepository.save(user);
         final SecurityQuestionDefinition questionDefinition = new SecurityQuestionDefinition();
         questionDefinition.setId(6L);
         questionDefinition.setText("Who was your childhood hero?");
         securityQuestionRepository.save(new SecurityQuestion(user, questionDefinition, "Hulk"));
     }
+
 
     /**
      * wire userDetailsService into authentication config
@@ -134,6 +137,7 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new Md5PasswordEncoder(); // deprecated MD% password encoder implementation
+        //return new Md5PasswordEncoder(); // deprecated MD% password encoder implementation
+        return new StandardPasswordEncoder(); // this is the standard enconder sha-256
     }
 }

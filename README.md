@@ -943,6 +943,21 @@ public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception 
 }
 ```
 
+### Standard encoding - sha-256
+* More secure because use sha-256
+* Is the standard option 
+* Java configuration in `Security Config` bean
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new StandardPasswordEncoder(); // this is the standard enconder sha-256
+}
+```
+* Use in password setting results in sha-256 `5a1ddadef8ea0bfc78ad8572ffe282e2f452f847eb870ae92b4ae79888f014ea253377bfa8c51ab9`
+```java
+user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-256
+```
+* User service that save password shoul wire up `PasswordEncoder` and encode password
 
 ## Troubleshootings
 

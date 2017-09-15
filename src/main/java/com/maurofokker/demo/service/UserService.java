@@ -10,6 +10,7 @@ import com.maurofokker.demo.model.User;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import javax.transaction.Transactional;
@@ -28,6 +29,9 @@ class UserService implements IUserService {
     @Autowired
     private PasswordResetTokenRepository passwordTokenRepository;
 
+    @Autowired
+    private PasswordEncoder encoder;
+
     //
 
     @Override
@@ -40,6 +44,7 @@ class UserService implements IUserService {
         if (emailExist(user.getEmail())) {
             throw new EmailExistsException("There is an account with that email address: " + user.getEmail());
         }
+        user.setPassword(encoder.encode(user.getPassword())); // encode user psw
         log.info("new user registration");
         return userRepository.save(user);
     }
@@ -63,7 +68,8 @@ class UserService implements IUserService {
 
     @Override
     public void changeUserPassword(final User user, final String password) {
-        user.setPassword(password);
+        //user.setPassword(password);
+        user.setPassword(encoder.encode(user.getPassword())); // encode user psw
         userRepository.save(user);
     }
 
