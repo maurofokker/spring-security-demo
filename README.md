@@ -918,6 +918,31 @@ create table persistent_logins (username varchar(64) not null,
 								token varchar(64) not null,
 								last_used timestamp not null)
 ```
+## User credential storage
+* concern in protection
+
+## MD5 encoding
+* Less secure 
+* Is deprecated
+* Java configuration in `Security Config` bean
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new Md5PasswordEncoder(); // deprecated MD% password encoder implementation
+}
+```
+* Use in password setting results in MD5 `5f4dcc3b5aa765d61d8327deb882cf99`
+```java
+user.setPassword(passwordEncoder().encodePassword("password", null));
+```
+* Security configuration to use password encoder
+```java
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { 
+    auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+}
+```
+
 
 ## Troubleshootings
 
