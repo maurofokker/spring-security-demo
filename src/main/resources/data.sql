@@ -14,7 +14,7 @@ insert into security_question_definition (id, text) values (4, 'When you were yo
 insert into security_question_definition (id, text) values (5, 'Where were you New Year''s 2000?');
 insert into security_question_definition (id, text) values (6, 'Who was your childhood hero?');
 
--- Test User
-insert into user (id, email, password, enabled, created) values (1, 'test@mail.com', 'password', true, '2017-09-13 00:00:00');
-insert into security_question(id, user_id, security_question_definition_id, answer) values (1, 1, 6, 'Hulk');
+-- Test User done in post construct bean
+--insert into user (id, email, password, enabled, created) values (1, 'test@mail.com', 'password', true, '2017-09-13 00:00:00');
+--insert into security_question(id, user_id, security_question_definition_id, answer) values (1, 1, 6, 'Hulk');
 

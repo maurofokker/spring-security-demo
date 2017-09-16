@@ -918,6 +918,79 @@ create table persistent_logins (username varchar(64) not null,
 								token varchar(64) not null,
 								last_used timestamp not null)
 ```
+## User credential storage
+* concern in protection
+
+## MD5 encoding
+* Less secure 
+* Is deprecated
+* Java configuration in `Security Config` bean
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new Md5PasswordEncoder(); // deprecated MD% password encoder implementation
+}
+```
+* Use in password setting results in MD5 `5f4dcc3b5aa765d61d8327deb882cf99`
+```java
+user.setPassword(passwordEncoder().encodePassword("password", null));
+```
+* Security configuration to use password encoder
+```java
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { 
+    auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+}
+```
+
+### Standard encoding - sha-256
+* More secure because use sha-256
+* Is the standard option 
+* Java configuration in `Security Config` bean
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new StandardPasswordEncoder(); // this is the standard enconder sha-256
+}
+```
+* Use in password setting results in sha-256 `5a1ddadef8ea0bfc78ad8572ffe282e2f452f847eb870ae92b4ae79888f014ea253377bfa8c51ab9`
+```java
+user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-256
+```
+* User service that save password shoul wire up `PasswordEncoder` and encode password
+
+### Using SALTS to encoding
+* SALT can be saved in db, dont need to be hidden
+* SALT should be unique per credential
+* SALT should be fixed length
+* SALT should be cryptographically strong random value
+
+* Spring security `StandardPasswordEncoder` implementation uses a SALT by default that is secure `class SecureRandomBytesKeyGenerator implements BytesKeyGenerator`
+    * This SALT implementation meet above conditions
+### Using Bcrypt encoding implementation
+* Benefits 
+1. Uses built-in salt value, different for each psw
+2. Random is a 16 byte value (for salt)
+3. Support for key stretching with a slow algorithm
+4. Amount of work for key stretching can be set with `strength` parameter wich takes values from 3 to 31 and default value is 10.
+5. The higher the strength value, more work has to be done to calculate the hash
+6. It is important to know that strength value can be change without affecting existing passwords, because the value is stored in the encoded hash (see below)
+* Bcrypt with strength 12
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder(12); // implements bcrypt encoder
+}
+```
+* Bcrypt encoding for `password` gives (in this case) `$2a$12$43gaubWA1jlYdi.JOxwGAe/BNopGQbC5ThRws2Gj6W74Mr/fMlhn.`
+
+| part | description |
+| --- | --- | 
+| $2a$ | indicates bcrypt hash | 
+| 12$ | strength | 
+| 43gaubWA1jlYdi.JOxwGAe | 22 characters salt |
+| /BNopGQbC5ThRws2Gj6W74Mr/fMlhn. | 31 characters hash value |
+
 
 ## Troubleshootings
 
@@ -940,6 +1013,14 @@ create table persistent_logins (username varchar(64) not null,
 6 [Registration form](http://www.baeldung.com/spring-security-registration)
 
 7 [Remember me hash token](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#remember-me-hash-token)
+
+8 [Password encoding](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-password-encoding)
+
+9 [Salt to hash](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#adding-salt-to-a-hash)
+
+10 [Key stretching](https://en.wikipedia.org/wiki/Key_stretching)
+
+11 [Spring Bcrypt](https://docs.spring.io/spring-security/site/docs/current/apidocs/org/springframework/security/crypto/bcrypt/BCrypt.html)
 ### Persistence
 
 1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
