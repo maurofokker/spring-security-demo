@@ -967,6 +967,30 @@ user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-
 
 * Spring security `StandardPasswordEncoder` implementation uses a SALT by default that is secure `class SecureRandomBytesKeyGenerator implements BytesKeyGenerator`
     * This SALT implementation meet above conditions
+### Using Bcrypt encoding implementation
+* Benefits 
+1. Uses built-in salt value, different for each psw
+2. Random is a 16 byte value (for salt)
+3. Support for key stretching with a slow algorithm
+4. Amount of work for key stretching can be set with `strength` parameter wich takes values from 3 to 31 and default value is 10.
+5. The higher the strength value, more work has to be done to calculate the hash
+6. It is important to know that strength value can be change without affecting existing passwords, because the value is stored in the encoded hash (see below)
+* Bcrypt with strength 12
+```java
+@Bean
+public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder(12); // implements bcrypt encoder
+}
+```
+* Bcrypt encoding for `password` gives (in this case) `$2a$12$43gaubWA1jlYdi.JOxwGAe/BNopGQbC5ThRws2Gj6W74Mr/fMlhn.`
+
+| part | description |
+| --- | --- | 
+| $2a$ | indicates bcrypt hash | 
+| 12$ | strength | 
+| 43gaubWA1jlYdi.JOxwGAe | 22 characters salt |
+| /BNopGQbC5ThRws2Gj6W74Mr/fMlhn. | 31 characters hash value |
+
 
 ## Troubleshootings
 
@@ -993,6 +1017,10 @@ user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-
 8 [Password encoding](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-password-encoding)
 
 9 [Salt to hash](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#adding-salt-to-a-hash)
+
+10 [Key stretching](https://en.wikipedia.org/wiki/Key_stretching)
+
+11 [Spring Bcrypt](https://docs.spring.io/spring-security/site/docs/current/apidocs/org/springframework/security/crypto/bcrypt/BCrypt.html)
 ### Persistence
 
 1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
