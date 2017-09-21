@@ -45,6 +45,7 @@ class UserService implements IUserService {
             throw new EmailExistsException("There is an account with that email address: " + user.getEmail());
         }
         user.setPassword(encoder.encode(user.getPassword())); // encode user psw
+        //user.setPassword(user.getPassword());
         log.info("new user registration");
         return userRepository.save(user);
     }

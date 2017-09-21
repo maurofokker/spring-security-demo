@@ -991,6 +991,58 @@ public PasswordEncoder passwordEncoder() {
 | 43gaubWA1jlYdi.JOxwGAe | 22 characters salt |
 | /BNopGQbC5ThRws2Gj6W74Mr/fMlhn. | 31 characters hash value |
 
+## Run-as functionality
+* Allow you to run some operations under different principal with different authorities without logout and login with different user
+* Some scenarios of use
+    * System that need to call remote services
+    * The need of a temporal privileges elevation of the current logged user (generating a new report that needs to access more data than the user may regularly need to see)
+### Implementation
+* Configure method security with RunAsManager bean
+```java
+@Configuration
+@EnableGlobalMethodSecurity(securedEnabled = true)
+public class DemoMethodSecurityConfig extends GlobalMethodSecurityConfiguration {
+    @Override
+    protected RunAsManager runAsManager() {
+        final RunAsManagerImpl runAsManager = new RunAsManagerImpl();
+        runAsManager.setKey("MyRunAsKey");
+        return runAsManager;
+    }
+}
+```
+* Set up new authentication provider for RunAs (note that the key must be the same)
+```java
+@Bean
+public AuthenticationProvider runAsAuthenticationProvider() {
+    final RunAsImplAuthenticationProvider authProvider = new RunAsImplAuthenticationProvider();
+    authProvider.setKey("MyRunAsKey"); // same as DemoMethodSecurityConfig.runAsManager method
+    return authProvider;
+}
+```
+* Should be wired in `AuthenticationManagerBuilder` of `configureGlobal(AuthenticationManagerBuilder auth)` method
+```java
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { 
+    auth.authenticationProvider(daoAuthenticationProvider());
+    auth.authenticationProvider(runAsAuthenticationProvider());
+}
+```
+* Because the use of an additional authentication provider `userDetailsService` is going to managed from another authentication provider
+```java
+@Bean
+public AuthenticationProvider daoAuthenticationProvider() {
+    final DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+    authProvider.setUserDetailsService(userDetailsService);
+    authProvider.setPasswordEncoder(passwordEncoder());
+    return authProvider;
+}
+```
+* Create a Controller with extra role `@Secured({ "ROLE_USER", "RUN_AS_REPORTER" })`
+* Create a Service with method secured with `@Secured({ "ROLE_RUN_AS_REPORTER" })`
+* Note that the `RUN_AS_REPORTER` at the Controller level is just a marker role and not an actual role assigned to the user
+* This previous `RUN_AS*` marker is converted to the new authority, receives the extra `ROLE_` prefix in the process, and is now available on the current Authentication object
+
+* Finally add new `DemoMethodSecurityConfig.class` to the `SpringSecurityDemoApplication.class`  
 
 ## Troubleshootings
 
@@ -1021,6 +1073,8 @@ public PasswordEncoder passwordEncoder() {
 10 [Key stretching](https://en.wikipedia.org/wiki/Key_stretching)
 
 11 [Spring Bcrypt](https://docs.spring.io/spring-security/site/docs/current/apidocs/org/springframework/security/crypto/bcrypt/BCrypt.html)
+
+12 [Run as Authentication](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#runas)
 ### Persistence
 
 1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
