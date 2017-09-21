@@ -9,6 +9,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.access.intercept.RunAsImplAuthenticationProvider;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -46,12 +49,14 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
     //
 
 
+
     @PostConstruct
     private void saveTestUser() {
         final User user = new User();
         user.setEmail("test@mail.com");
         // user.setPassword(passwordEncoder().encodePassword("password", null)); // md5 deprecated password encoder
         user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-256
+        // user.setPassword("password");
         userRepository.save(user);
         final SecurityQuestionDefinition questionDefinition = new SecurityQuestionDefinition();
         questionDefinition.setId(6L);
@@ -69,7 +74,10 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
      */
     @Autowired
     public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { // @formatter:off
-        auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+         //auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+
+        auth.authenticationProvider(daoAuthenticationProvider());
+        auth.authenticationProvider(runAsAuthenticationProvider());
     } // @formatter:on
 
     /**
@@ -136,10 +144,26 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
     /**
      * Implement password encoder
      */
+
     @Bean
     public PasswordEncoder passwordEncoder() {
         //return new Md5PasswordEncoder(); // deprecated MD% password encoder implementation
         //return new StandardPasswordEncoder(); // this is the standard enconder sha-256
         return new BCryptPasswordEncoder(12); // implements bcrypt encoder
     }
+
+    @Bean
+    public AuthenticationProvider runAsAuthenticationProvider() {
+        final RunAsImplAuthenticationProvider authProvider = new RunAsImplAuthenticationProvider();
+        authProvider.setKey("MyRunAsKey"); // same as DemoMethodSecurityConfig.runAsManager method
+        return authProvider;
+    }
+    @Bean
+    public AuthenticationProvider daoAuthenticationProvider() {
+        final DaoAuthenticationProvider authProvider = new DaoAuthenticationProvider();
+        authProvider.setUserDetailsService(userDetailsService);
+        authProvider.setPasswordEncoder(passwordEncoder());
+        return authProvider;
+    }
+
 }

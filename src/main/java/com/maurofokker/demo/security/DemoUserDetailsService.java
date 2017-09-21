@@ -24,6 +24,8 @@ import java.util.Collection;
 public class DemoUserDetailsService implements UserDetailsService {
     private static Logger log = LoggerFactory.getLogger(DemoUserDetailsService.class);
 
+    private static final String ROLE_USER = "ROLE_USER";
+
     // needed bc there are gonna be persistence work
     // to retrieve user
     @Autowired
@@ -38,7 +40,7 @@ public class DemoUserDetailsService implements UserDetailsService {
             throw new UsernameNotFoundException("No user found with email: " + email);
         }
         //todo: put enabled as user.getEnabled() after finish feature, by the moment im disabling account validation
-        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), true, true, true, true, getAuthorities("ROLE_USER"));
+        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), true, true, true, true, getAuthorities(ROLE_USER));
     }
 
     /**
