@@ -1,6 +1,7 @@
 package com.maurofokker.demo.web.controller;
 
 import com.maurofokker.demo.persistence.UserRepository;
+import com.maurofokker.demo.service.AsyncBean;
 import com.maurofokker.demo.service.IUserService;
 import com.maurofokker.demo.validation.EmailExistsException;
 import com.maurofokker.demo.model.User;
@@ -27,10 +28,14 @@ public class UserController {
     @Autowired
     private IUserService userService;
 
+    @Autowired
+    private AsyncBean asyncBean;
+
     //
 
     @RequestMapping
     public ModelAndView list() {
+        asyncBean.asyncCall(); // call to asyng method to see what happen with spring security context
         Iterable<User> users = this.userRepository.findAll();
         return new ModelAndView("users/list", "users", users);
     }

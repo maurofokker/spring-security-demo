@@ -1046,7 +1046,27 @@ public AuthenticationProvider daoAuthenticationProvider() {
 
 ## Troubleshootings
 
+### CSS not found with Thimeleaf and Spring Boot
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
+
+### Spring Security Context Holder problems hold conext in new threads
+* SecurityContextHolder is the storage mechanism for the security information associated to the running thread, it uses a ThreadLocal to store de user details which hold a single context per thread, in an Async call that context is lost
+* Strategy to propagate security context to new threads:
+    *  Pass as environment property as VM Option parameter at startup: `-Dspring.security.strategy=MODE_INHERITABLETHREADLOCAL`
+    *  Add to application.properties: `spring.security.strategy=MODE_INHERITABLETHREADLOCAL`
+    *  Add programatically: `SecurityContextHolder.setStrategyName("MODE_INHERITABLETHREADLOCAL")`  
+* Test if current user pas in new thread
+```java
+@Async
+public void asyncCall() {
+    log.info("async call... {}", SecurityContextHolder.getContext().getAuthentication());
+}
+```
+* Security context is mantained between requests (or user operations), in MVC app after login, the user is identified by its session id. 
+  the management of the context is done by the `SecurityContextPersistenceFilter`. And by default, it stores the context as an attribute of the HTTP session, 
+  and it then restores it for each request and clears it when the request ends.
+* If the system is stateless (no session), like in a REST API, `SecurityContextPersistenceFilter` is still needed for this logic.
+* [Store security context between requests](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#tech-intro-sec-context-persistence)
 
 ## References
 
