@@ -1303,6 +1303,70 @@ public void asyncCall() {
 * If the system is stateless (no session), like in a REST API, `SecurityContextPersistenceFilter` is still needed for this logic.
 * [Store security context between requests](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#tech-intro-sec-context-persistence)
 
+## Tracking active users with SessionRegistry interface
+* Configuration goes when configuring `HttpSecurity`
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+            // configurations
+            // ...
+            .and()
+            .sessionManagement()
+                .maximumSessions(1)
+                .sessionRegistry(sessionRegistry()) // register this session registry into our security configuration
+                .and()
+                .sessionFixation().none() // this is need to close the session configuration
+
+            .and()
+            // continues remember me configuration
+            // and csrf disabling
+    ;
+}
+@Bean
+public SessionRegistry sessionRegistry() {
+    return new SessionRegistryImpl();
+}
+```
+* Active users can be managed in a service that wire `SessionRegistry`
+```java
+@Service
+public class ActiveUserService {
+    private static Logger log = LoggerFactory.getLogger(ActiveUserService.class);
+
+    @Autowired
+    private SessionRegistry sessionRegistry; // already wired in BasicSecurityConfig
+
+    public List<String> getAllActiveUsers() {
+        //List<User> principals = sessionRegistry.getAllPrincipals(); // return List<Object> (parent) and cannot be casted to List<User> (child)
+        List<Object> principals = sessionRegistry.getAllPrincipals();
+        User[] users = principals.toArray(new User[principals.size()]); // convert to array of Users
+
+        return Arrays.stream(users)
+                .filter(u -> !sessionRegistry.getAllSessions(u, false).isEmpty()) // get active sessions from all sessiones
+                .map(u -> u.getUsername()) // get usernames
+                .collect(Collectors.toList())
+        ;
+    }
+}
+```
+* Get active users to view can be done by call service created above
+```java
+@Autowired private ActiveUserService activeUserService;
+
+@RequestMapping
+public ModelAndView list() {
+    asyncBean.asyncCall(); // call to asyng method to see what happen with spring security context
+
+    // return just active users
+    List<User> users = activeUserService.getAllActiveUsers().stream()
+            .map(s -> userRepository.findByEmail(s)).collect(Collectors.toList());
+
+    log.info("users -> {}", users);
+    return new ModelAndView("users/list", "users", users);
+}
+```
+
 ## References
 
 ### Spring Security
