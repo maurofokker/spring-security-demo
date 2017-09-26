@@ -1173,6 +1173,47 @@ public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception 
 
 * `ProviderManager` shows providers list registered in case you want to see if custom provider is being use
 
+### Multiple authentication providers
+* This could be done in the `configureGlobal(AuthenticationManagerBuilder auth)` method... i.e 3 providers
+```java
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { 
+    auth.authenticationProvider(customAuthenticationProvider); 
+    auth.authenticationProvider(daoAuthenticationProvider());
+    auth.authenticationProvider(runAsAuthenticationProvider());
+}
+```
+
+### Authentication manager
+* Define an auth manager bean is done in rare advanced cases
+* If an auth manager can not authenticate then it goes to the parent
+* This let you the possibility to change the hierarchy and plug in a sort of fallback auth manager in case all others fall
+```java
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { 
+    auth.parentAuthenticationManager(new ProviderManager(Lists.newArrayList(customAuthenticationProvider)));
+}
+```
+* Also is possible to confgure the auth manager
+* By default, the ProviderManager will clear sensitive credentials information from the Authentication object which is returned by a successful authentication request. 
+    * This prevents information like passwords being retained longer than necessary.
+    * In some rare cases, system need to change that - for example, say we’re storing these authentication objects into a cache (maybe they’re expensive to get back). 
+* To disable the clearing of credentials can set next configuration
+```java
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+    ProviderManager authenticationManager = new ProviderManager(Lists.newArrayList(customAuthenticationProvider));
+    authenticationManager.setEraseCredentialsAfterAuthentication(false);
+    auth.parentAuthenticationManager(authenticationManager);
+}
+```
+* Is important to keep in mind that the config API allows above configuration without messing with the actual manager bean
+```java
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+    auth.eraseCredentials(false).userDetailsService(userDetailsService);
+}
+```
 
 ## Troubleshootings
 
