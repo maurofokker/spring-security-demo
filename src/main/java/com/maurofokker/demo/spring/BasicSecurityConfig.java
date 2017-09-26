@@ -49,13 +49,14 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private LoggingFilter loggingFilter;
 
+    //@Autowired
+    //private CustomAuthenticationProvider customAuthenticationProvider;
+
     public BasicSecurityConfig() {
         super();
     }
 
     //
-
-
 
     @PostConstruct
     private void saveTestUser() {
@@ -80,12 +81,14 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
      * @throws Exception
      */
     @Autowired
-    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { // @formatter:off
-         //auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+         //auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder()); // this contains by default DaoAuthenticationProvider
+
+        // auth.authenticationProvider(customAuthenticationProvider); // should implement encoder and salt but is for simple login
 
         auth.authenticationProvider(daoAuthenticationProvider());
         auth.authenticationProvider(runAsAuthenticationProvider());
-    } // @formatter:on
+    }
 
     /**
      * Difference btw use of Role and Authority in url authorization:

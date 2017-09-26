@@ -1106,6 +1106,74 @@ protected void configure(HttpSecurity http) throws Exception {
 11. `ExceptionTranslationFilter`
 12. `FilterSecurityInterceptor`
 
+## Authentication Providers
+
+### Custom Authentication Provider
+* Should implement `AuthenticationProvider` interface if we call to a third party system
+* Contract in `authenticate` method of interface
+    * if authentication succeeds, a full Authentication object (with credentials) is expected as the return
+    * if the provider doesn’t support the Authentication input, it will return null (and the next provider will be tried)
+    * if the provider does support it and we attempt authentication and fail - AuthenticationException
+```java
+@Component
+public class CustomAuthenticationProvider implements AuthenticationProvider {
+
+    @Override
+    public Authentication authenticate(Authentication authentication) throws AuthenticationException {
+        final String name = authentication.getName();
+        final String password = authentication.getCredentials().toString();
+
+        if (!supportsAuthentication(authentication)) { // check if this implementation manage authentication
+            return null;
+        }
+
+        /**
+         * Check authentication in 3rd party system, if its ok then return credentials in this case
+         * if 3rd party system fails then must manage data to send exception. 3rd party system could send more
+         * data than simple true or false and this system needs to manage that information in case of throw exception
+         * Is better to control all exceptions that you can that are extends from AuthenticationException
+         */
+        if (doAuthenticationAgainstThirdPartySystem()) { // could do authentication in 3rd party system but in this case just return credentials
+            return new UsernamePasswordAuthenticationToken(name, password, new ArrayList<>());
+        } else {
+            throw new BadCredentialsException("Authentication against the third party system failed");
+        }
+    }
+
+    @Override
+    public boolean supports(Class<?> authentication) {
+        return authentication.equals(UsernamePasswordAuthenticationToken.class);
+    }
+
+    //
+
+    private boolean doAuthenticationAgainstThirdPartySystem() {
+        return true;
+    }
+
+    private boolean supportsAuthentication(Authentication authentication) {
+        return true; // becausa this provider will manage authentication
+    }
+}
+```
+* Also could extend `AbstractUserDetailsAuthenticationProvider` like `DaoAuthenticationProvider` because handle things like `encoder` and `salt`
+* In case an Authentication provider is not handle authentication then let other provider to do it
+* Override default provider `auth.userDetailsService(userDetailsService)` in `configureGlobal(AuthenticationManagerBuilder auth)` method
+```java
+@Autowired
+private CustomAuthenticationProvider customAuthenticationProvider;
+
+@Autowired
+public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception { 
+     //auth.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder()); // this contains by default DaoAuthenticationProvider
+
+    auth.authenticationProvider(customAuthenticationProvider); // should implement encoder and salt but is for simple login
+}
+```
+
+* `ProviderManager` shows providers list registered in case you want to see if custom provider is being use
+
+
 ## Troubleshootings
 
 ### CSS not found with Thymeleaf and Spring Boot
@@ -1159,6 +1227,10 @@ public void asyncCall() {
 12 [Run as Authentication](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#runas)
 
 13 [Add custom filters](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-custom-filters)
+
+14 [Using others authentication providers with XML](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-auth-providers)
+
+15 [AuthenticationManager, ProviderManager and AuthenticationProvider](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-authentication-manager)
 ### Persistence
 
 1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
