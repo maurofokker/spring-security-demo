@@ -18,6 +18,8 @@ import org.springframework.security.config.annotation.authentication.builders.Au
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -129,6 +131,13 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
                     .permitAll().logoutUrl("/logout")
 
                 .and()
+                .sessionManagement()
+                    .maximumSessions(1)
+                    .sessionRegistry(sessionRegistry()) // register this session registry into our security configuration
+                    .and()
+                    .sessionFixation().none() // this is need to close the session configuration
+
+                .and()
                 .rememberMe()
                     .key("demosecapp")
                     .tokenValiditySeconds(604800) // 1 week = 604800
@@ -138,6 +147,11 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .csrf().disable()
         ;
+    }
+
+    @Bean
+    public SessionRegistry sessionRegistry() {
+        return new SessionRegistryImpl();
     }
 
     /**

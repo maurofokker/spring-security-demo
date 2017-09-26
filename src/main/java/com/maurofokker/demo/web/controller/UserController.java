@@ -1,10 +1,13 @@
 package com.maurofokker.demo.web.controller;
 
 import com.maurofokker.demo.persistence.UserRepository;
+import com.maurofokker.demo.security.ActiveUserService;
 import com.maurofokker.demo.service.AsyncBean;
 import com.maurofokker.demo.service.IUserService;
 import com.maurofokker.demo.validation.EmailExistsException;
 import com.maurofokker.demo.model.User;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.validation.BindingResult;
@@ -17,10 +20,13 @@ import org.springframework.web.servlet.ModelAndView;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import javax.validation.Valid;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Controller
 @RequestMapping("/user")
 public class UserController {
+    private static Logger log = LoggerFactory.getLogger(UserController.class);
 
     @Autowired
     private UserRepository userRepository;
@@ -31,12 +37,21 @@ public class UserController {
     @Autowired
     private AsyncBean asyncBean;
 
+    @Autowired
+    private ActiveUserService activeUserService;
+
     //
 
     @RequestMapping
     public ModelAndView list() {
         asyncBean.asyncCall(); // call to asyng method to see what happen with spring security context
-        Iterable<User> users = this.userRepository.findAll();
+
+        // return just active users
+        List<User> users = activeUserService.getAllActiveUsers().stream()
+                .map(s -> userRepository.findByEmail(s)).collect(Collectors.toList());
+
+        log.info("users -> {}", users);
+        //Iterable<User> users = this.userRepository.findAll();
         return new ModelAndView("users/list", "users", users);
     }
 
