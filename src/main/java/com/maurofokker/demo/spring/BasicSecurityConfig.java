@@ -5,6 +5,7 @@ import com.maurofokker.demo.model.SecurityQuestionDefinition;
 import com.maurofokker.demo.model.User;
 import com.maurofokker.demo.persistence.SecurityQuestionRepository;
 import com.maurofokker.demo.persistence.UserRepository;
+import com.maurofokker.demo.security.filter.LoggingFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
@@ -20,6 +21,7 @@ import org.springframework.security.config.annotation.web.configuration.WebSecur
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
 
@@ -40,8 +42,12 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
 
     @Autowired
     private UserRepository userRepository;
+
     @Autowired
     private SecurityQuestionRepository securityQuestionRepository;
+
+    @Autowired
+    private LoggingFilter loggingFilter;
 
     public BasicSecurityConfig() {
         super();
@@ -98,6 +104,7 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
     @Override
     protected void configure(HttpSecurity http) throws Exception {
         http
+                .addFilterBefore(loggingFilter, AnonymousAuthenticationFilter.class) // add custom LoggingFilter in chain before of AnonymousAuthenticationFilter
                 .authorizeRequests()
                     .antMatchers("/signup"
                             , "/user/register"

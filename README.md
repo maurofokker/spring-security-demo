@@ -1044,12 +1044,74 @@ public AuthenticationProvider daoAuthenticationProvider() {
 
 * Finally add new `DemoMethodSecurityConfig.class` to the `SpringSecurityDemoApplication.class`  
 
+## Add custom filter to filter chain of security configuration
+
+* Default filter chain list
+1. `WebAsyncManagerIntegrationFilter`
+2. `SecurityContextPersistenceFilter`
+3. `HeaderWriterFilter`
+4. `LogoutFilter`
+5. `RequestCacheAwareFilter`
+6. `SecurityContextHoldeAwareRequestFilter`
+7. `RememberMeAuthenticationFilter`
+8. `AnonymousAuthenticationFilter`
+9. `SessionManagementFilter`
+10. `ExceptionTranslationFilter`
+11. `FilterSecurityInterceptor`
+
+* New custom filter must extend `GenericFilterBean` and override `doFilter` method
+```java
+@Component
+public class LoggingFilter extends GenericFilterBean {
+    private final Logger log = Logger.getLogger(LoggingFilter.class);
+
+    @Override
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        
+        // some filter logic
+
+        filterChain.doFilter(servletRequest, servletResponse); // implementation
+    }
+}
+```
+* To add new custom filter to security config
+1. Wire up filter 
+```java
+@Autowired
+private LoggingFilter loggingFilter;
+```
+2. Set in filter chain (before or after another filter, or let spring set position)
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+        .addFilterBefore(loggingFilter, AnonymousAuthenticationFilter.class) // add custom LoggingFilter in chain before of AnonymousAuthenticationFilter
+        .authorizeRequests()
+        // more configuration    
+        .csrf().disable()
+    ;
+}
+```
+* After configuration filter chain is (custom filter is set before)
+1. `WebAsyncManagerIntegrationFilter`
+2. `SecurityContextPersistenceFilter`
+3. `HeaderWriterFilter`
+4. `LogoutFilter`
+5. `RequestCacheAwareFilter`
+6. `SecurityContextHoldeAwareRequestFilter`
+7. `RememberMeAuthenticationFilter`
+8. `LoggingFilter`
+9. `AnonymousAuthenticationFilter`
+10. `SessionManagementFilter`
+11. `ExceptionTranslationFilter`
+12. `FilterSecurityInterceptor`
+
 ## Troubleshootings
 
-### CSS not found with Thimeleaf and Spring Boot
+### CSS not found with Thymeleaf and Spring Boot
 [Thymeleaf and @EnableWebMvc](https://stackoverflow.com/questions/29562471/springboot-with-thymeleaf-css-not-found)
 
-### Spring Security Context Holder problems hold conext in new threads
+### Spring Security Context Holder problems hold context in new threads
 * SecurityContextHolder is the storage mechanism for the security information associated to the running thread, it uses a ThreadLocal to store de user details which hold a single context per thread, in an Async call that context is lost
 * Strategy to propagate security context to new threads:
     *  Pass as environment property as VM Option parameter at startup: `-Dspring.security.strategy=MODE_INHERITABLETHREADLOCAL`
