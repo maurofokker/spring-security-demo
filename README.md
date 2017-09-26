@@ -1215,6 +1215,70 @@ public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception 
 }
 ```
 
+## Authentication User Storage
+### In Memory
+* Authentication done with in memory user storage
+```java
+@EnableWebSecurity
+public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {    
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth.inMemoryAuthentication()
+            .withUser("user1").password("password1").roles("USER")
+            .and()
+            .withUser("user2").password("password2").roles("ADMIN")
+        ;
+    }
+}
+```
+### Jdbc
+* Authentication done with jdbc user storage
+```java
+@Autowired private DataSource dataSource;
+
+@EnableWebSecurity
+public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {    
+    @Autowired
+    public void configureGlobal(AuthenticationManagerBuilder auth) throws Exception {
+        auth.jdbcAuthentication().dataSource(dataSource).withDefaultSchema()
+            .withUser("user1").password("password1").roles("USER")
+            .and()
+            .withUser("user2").password("password2").roles("ADMIN")
+        ;
+    }
+}
+```
+* `withDefaultSchema()` just work for h2 db, in mysql this wont work because it doesnt have type `varchar_ignorecase`
+* Structure for MySQL
+```sql
+create schema if not exists ssdemo;
+USE ssdemo;
+create table users(
+  username varchar(50) not null primary key, 
+  password varchar(500) not null, 
+  enabled boolean not null
+);
+create table authorities (
+  username varchar(50) not null, 
+  authority varchar(50) not null, 
+  constraint fk_authorities_users foreign key(username) references users(username)
+);
+create unique index ix_auth_username on authorities (username,authority);
+```
+* With above schema `withDefaultSchema()` configuration is not longer needed
+```java
+auth.jdbcAuthentication().dataSource(dataSource)
+``` 
+
+* For others non standard db structure (own structure) the configuration allows use to set up
+```java
+.usersByUsernameQuery( ... )
+.authoritiesByUsernameQuery( ... )
+```
+
+### JPA User Storage
+* This is shown in the code and describe it earlier in this documentation
+
 ## Troubleshootings
 
 ### CSS not found with Thymeleaf and Spring Boot
@@ -1272,6 +1336,9 @@ public void asyncCall() {
 14 [Using others authentication providers with XML](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-auth-providers)
 
 15 [AuthenticationManager, ProviderManager and AuthenticationProvider](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-authentication-manager)
+
+16 [Authentication user storage - inmemory, jdbc and jpa](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-authentication)
+
 ### Persistence
 
 1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
