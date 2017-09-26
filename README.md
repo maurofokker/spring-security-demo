@@ -1367,6 +1367,38 @@ public ModelAndView list() {
 }
 ```
 
+## Authorization
+### Auth process
+#### `AccessDecisionManager` as the main driver 
+* Starter in the authorization flow
+* It implementations
+1. `AffirmativeBased`: any affirmative vote will grant access
+2. `ConsensusBased`: need a majority of affirmative vote to grant access
+3. `UnanimousBased`: all affirmative vote are required to grant access
+
+#### `Voters` in the authorization process
+* A Voter is a rule that can grant or restrict access  to a resource 
+* Base implementation is `AccessDecisionVoter` allow to implement own logic, but there are a lot of them in the framework
+* Some voter implementations
+1. `Role`: voter used directly when using Role based authorization
+2. Exist one `Hierarchical Role`
+3. `Authenticated`: voter that check for authentication when using `isAuthenticated()` expression
+4. `Web expressions`: 
+5. `ACL`:
+
+#### Authorization strategy
+* By default
+    * `AccessDecisionManager` is `AffirmariveBased`
+    * Works with a `RoleVoter` and an `AuthenticatedVoter`
+* Above can be changed with configurations and set other voters
+
+#### Authorization flow in a simple setup
+* Setup is done to allows everything at the URL and uses method security level (in this case to secure a form)
+1. `FilterSecurityInterceptor` is the last in the filter chain and is the entry point to call the AccessDecisionManager in the beforeInvocation call
+2. This simply goes over the voters and, if any of the voters deny access, then the AccessDeniedException is thrown. Otherwise, access is granted.
+   
+* Authorization flow run twitce, first for the url and second for a method secured
+
 ## References
 
 ### Spring Security
@@ -1402,6 +1434,10 @@ public ModelAndView list() {
 15 [AuthenticationManager, ProviderManager and AuthenticationProvider](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-authentication-manager)
 
 16 [Authentication user storage - inmemory, jdbc and jpa](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-authentication)
+
+17 [Authorization the Default AccessDecisionManager](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-access-manager)
+
+18 [Authorization Pre-Invocation Handling](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#authz-pre-invocation)
 
 ### Persistence
 
