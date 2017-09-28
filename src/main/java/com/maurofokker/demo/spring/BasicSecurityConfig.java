@@ -1,8 +1,10 @@
 package com.maurofokker.demo.spring;
 
+import com.maurofokker.demo.model.Role;
 import com.maurofokker.demo.model.SecurityQuestion;
 import com.maurofokker.demo.model.SecurityQuestionDefinition;
 import com.maurofokker.demo.model.User;
+import com.maurofokker.demo.persistence.RoleRepository;
 import com.maurofokker.demo.persistence.SecurityQuestionRepository;
 import com.maurofokker.demo.persistence.UserRepository;
 import com.maurofokker.demo.security.filter.LoggingFilter;
@@ -29,6 +31,8 @@ import org.springframework.security.web.authentication.rememberme.PersistentToke
 
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -51,6 +55,9 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private LoggingFilter loggingFilter;
 
+    @Autowired
+    private RoleRepository roleRepository;
+
     //@Autowired
     //private CustomAuthenticationProvider customAuthenticationProvider;
 
@@ -67,6 +74,10 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
         // user.setPassword(passwordEncoder().encodePassword("password", null)); // md5 deprecated password encoder
         user.setPassword(passwordEncoder().encode("password")); // stardard encoder sha-256
         // user.setPassword("password");
+        final Role role = roleRepository.findByName("ROLE_ADMIN");
+        List<Role> roles = new ArrayList<>();
+        roles.add(role);
+        user.setRoles(roles);
         userRepository.save(user);
         final SecurityQuestionDefinition questionDefinition = new SecurityQuestionDefinition();
         questionDefinition.setId(6L);
