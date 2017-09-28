@@ -1399,6 +1399,161 @@ public ModelAndView list() {
    
 * Authorization flow run twitce, first for the url and second for a method secured
 
+### Auth Roles and Privileges
+#### Concepts
+* Flat topology for authorization means that one or more roles can be assigned to an expression
+* Above is not very useful because for every new role that need to access to expression there must compile again the code
+* It is better to have a two-level hierarchy topology than a flat one because this contain roles and privileges that can be added to role at runtime
+* Main concepts
+    * `Privilege`: granular and low-level capability in system
+    * `Role`: high-level and user facing
+    * `Authority`: `GrantedAuthority` class in spring; apply same concept as `Privilege` 
+    * `Permission`: apply same concept as `Privilege`
+    * `Right`: apply same concept as `Privilege`  
+    * `GranthedAuthority` will be map to a `Privilege` and  a `Role` is a collection of privileges
+* Privileges examples
+    * `Can see a ...`
+    * `Can update ...`
+    * `Can delete ...`
+    * `Can see all of ...`
+* Roles examples
+    * `ROLE_ADMIN` -> `{READ_PRIVILEGE, WRITE_PRIVILEGE}`
+    * `ROLE_USER` -> `{READ_PRIVILEGE}`
+* Relationship
+    * `User` and `Role` is many to many
+    * `Role` and `Privilege` is many to many
+#### Two-Level Implementation
+* Add `Role` and `Privilege` entities
+```java
+@Entity
+public class Role {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "roles_privileges", joinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "privilege_id", referencedColumnName = "id"))
+    private Collection<Privilege> privileges;
+
+    private String name;
+    
+    public Role() {
+        super();
+    }
+    
+    public Role(final String name) {
+        super();
+        this.name = name;
+    }
+
+    //  setter getter
+}
+
+@Entity
+public class Privilege {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Long id;
+
+    private String name;
+
+    @ManyToMany(mappedBy = "privileges")
+    private Collection<Role> roles;
+
+    public Privilege() {
+        super();
+    }
+
+    public Privilege(final String name) {
+        super();
+        this.name = name;
+    }
+
+    // setters and getters
+}
+```
+
+* Add roles to `User` entity
+```java
+@Entity
+@PasswordMatches
+public class User {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Email
+    @NotEmpty(message = "Username is required.")
+    private String email;
+
+    // use annotation to validate passw
+    @ValidPassword
+    @NotEmpty(message = "Password is required.")
+    private String password;
+
+    @Transient
+    @NotEmpty(message = "Password confirmation is required.")
+    private String passwordConfirmation;
+
+    @Column
+    private Boolean enabled;
+
+    private Calendar created = Calendar.getInstance();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
+    private Collection<Role> roles;
+
+    // setters and getters
+}
+```
+* Modify `UserDetailsService` to get authorities from user roles
+```java
+@Transactional
+@Service
+public class DemoUserDetailsService implements UserDetailsService {
+    private static Logger log = LoggerFactory.getLogger(DemoUserDetailsService.class);
+
+    // needed bc there are gonna be persistence work
+    // to retrieve user
+    @Autowired
+    private UserRepository userRepository;
+
+    public DemoUserDetailsService() {
+        super();
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(final String email) throws UsernameNotFoundException {
+        log.info("sercha username: {}", email);
+        final User user  = userRepository.findByEmail(email);
+        log.info("user -> {}",user.toString());
+        if (user == null) {
+            throw new UsernameNotFoundException("No user found with email: " + email);
+        }
+        //todo: put enabled as user.getEnabled() after finish feature, by the moment im disabling account validation
+        return new org.springframework.security.core.userdetails.User(user.getEmail(), user.getPassword(), true, true, true, true, getAuthorities(user.getRoles()));
+    }
+
+    /**
+     * wrapping authorities in the format spring security expects
+     * add authority in collection
+     * @param roles
+     * @return
+     */
+    public final Collection<? extends GrantedAuthority> getAuthorities(final Collection<Role> roles) {
+        return roles.stream()
+                .flatMap(role -> role.getPrivileges().stream())
+                .map(p -> new SimpleGrantedAuthority(p.getName()))
+                .collect(Collectors.toList());
+    }
+}
+```
+* Create repositories for `Role` and `Privilege`
+
 ## References
 
 ### Spring Security
@@ -1438,6 +1593,8 @@ public ModelAndView list() {
 17 [Authorization the Default AccessDecisionManager](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-access-manager)
 
 18 [Authorization Pre-Invocation Handling](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#authz-pre-invocation)
+
+19 [Role and Privilege in spring](http://www.baeldung.com/role-and-privilege-for-spring-security-registration)
 
 ### Persistence
 

@@ -7,6 +7,7 @@ import org.hibernate.validator.constraints.NotEmpty;
 
 import javax.persistence.*;
 import java.util.Calendar;
+import java.util.Collection;
 
 @Entity
 @PasswordMatches
@@ -33,6 +34,10 @@ public class User {
     private Boolean enabled;
 
     private Calendar created = Calendar.getInstance();
+
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(name = "users_roles", joinColumns = @JoinColumn(name = "user_id", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "role_id", referencedColumnName = "id"))
+    private Collection<Role> roles;
 
     public Long getId() {
         return this.id;
@@ -80,6 +85,14 @@ public class User {
 
     public void setEnabled(final Boolean enabled) {
         this.enabled = enabled;
+    }
+
+    public Collection<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(final Collection<Role> roles) {
+        this.roles = roles;
     }
 
     @Override
