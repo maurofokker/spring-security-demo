@@ -55,7 +55,7 @@ public class DemoUserDetailsService implements UserDetailsService {
      */
     public final Collection<? extends GrantedAuthority> getAuthorities(final Collection<Role> roles) {
         return roles.stream()
-                .flatMap(role -> role.getPrivileges().stream())
+                //.flatMap(role -> role.getPrivileges().stream())
                 .map(p -> new SimpleGrantedAuthority(p.getName()))
                 .collect(Collectors.toList());
     }
