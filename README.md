@@ -1411,7 +1411,7 @@ public final Collection<? extends GrantedAuthority> getAuthorities(final Collect
 * It implementations
 1. `AffirmativeBased`: any affirmative vote will grant access
 2. `ConsensusBased`: need a majority of affirmative vote to grant access
-3. `UnanimousBased`: all affirmative vote are required to grant access
+3. `UnanimousBased`: all affirmative vote are required to grant access (abstains doesn't count)
 
 #### `Voters` in the authorization process
 * A Voter is a rule that can grant or restrict access  to a resource 
@@ -1422,6 +1422,50 @@ public final Collection<? extends GrantedAuthority> getAuthorities(final Collect
 3. `Authenticated`: voter that check for authentication when using `isAuthenticated()` expression
 4. `Web expressions`: 
 5. `ACL`:
+
+##### Implementing a Custom Voter
+* Change from `AffirmativeBased` (default) to a more restrictive `UnanimousBased` (where custom voter will be added)
+```java
+@Bean
+public AccessDecisionManager unnanimous(){
+    List<AccessDecisionVoter<? extends Object>> voters = Lists.newArrayList(
+      new RoleVoter(), new AuthenticatedVoter(), new WebExpressionVoter());
+    return new UnanimousBased(voters);
+}
+```
+* Must be wire up to the authotize request
+```java
+@Override
+protected void configure(HttpSecurity http) throws Exception {
+    http
+        .authorizeRequests()
+            .antMatchers("/secured").access("hasRole('ADMIN')") // web expression voter secured for specific role
+            .antMatchers("/signup"
+                    , "/user/register"
+                    , "/registrationConfirm*"
+                    , "badUser*"
+                    , "/forgotPassword*"
+                    , "/user/resetPassword*"
+                    , "/user/changePassword*"
+                    , "/user/savePassword*"
+                    , "/js/**"
+                ).permitAll() 
+            .anyRequest().authenticated()
+                        .accessDecisionManager(unnanimous()) // use bean with unnanimous decision manager that add custom voter
+        .and()
+        
+        // configurations..
+
+        .and()
+        .csrf().disable()
+    ;
+}
+```
+* To create the new voter this need to implement `AccessDecisionVoter<Object>` interface
+```java
+public class RealTimeLockVoter implements AccessDecisionVoter<Object> { }
+```
+* Implementation of this in classes `RealTimeLockVoter` (custom voter) and `LockedUsers` (simple cache for users locked)
 
 #### Authorization strategy
 * By default
@@ -1632,6 +1676,8 @@ public class DemoUserDetailsService implements UserDetailsService {
 18 [Authorization Pre-Invocation Handling](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#authz-pre-invocation)
 
 19 [Role and Privilege in spring](http://www.baeldung.com/role-and-privilege-for-spring-security-registration)
+
+20 [Secured method invocation with AOP](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#aop-alliance)
 
 ### Persistence
 

@@ -1,5 +1,6 @@
 package com.maurofokker.demo.spring;
 
+import com.google.common.collect.Lists;
 import com.maurofokker.demo.model.Role;
 import com.maurofokker.demo.model.SecurityQuestion;
 import com.maurofokker.demo.model.SecurityQuestionDefinition;
@@ -8,16 +9,22 @@ import com.maurofokker.demo.persistence.RoleRepository;
 import com.maurofokker.demo.persistence.SecurityQuestionRepository;
 import com.maurofokker.demo.persistence.UserRepository;
 import com.maurofokker.demo.security.filter.LoggingFilter;
+import com.maurofokker.demo.security.voters.RealTimeLockVoter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.access.AccessDecisionManager;
+import org.springframework.security.access.AccessDecisionVoter;
 import org.springframework.security.access.ConfigAttribute;
 import org.springframework.security.access.SecurityConfig;
 import org.springframework.security.access.intercept.RunAsImplAuthenticationProvider;
 import org.springframework.security.access.method.MapBasedMethodSecurityMetadataSource;
 import org.springframework.security.access.method.MethodSecurityMetadataSource;
+import org.springframework.security.access.vote.AuthenticatedVoter;
+import org.springframework.security.access.vote.RoleVoter;
+import org.springframework.security.access.vote.UnanimousBased;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
@@ -31,6 +38,7 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.access.expression.WebExpressionVoter;
 import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.authentication.rememberme.JdbcTokenRepositoryImpl;
 import org.springframework.security.web.authentication.rememberme.PersistentTokenRepository;
@@ -130,6 +138,7 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .addFilterBefore(loggingFilter, AnonymousAuthenticationFilter.class) // add custom LoggingFilter in chain before of AnonymousAuthenticationFilter
                 .authorizeRequests()
+                    .antMatchers("/secured").access("hasRole('ADMIN')") // for web expression voter
                     .antMatchers("/signup"
                             , "/user/register"
                             , "/registrationConfirm*"
@@ -141,6 +150,7 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
                             , "/js/**"
                         ).permitAll() // give access to url and operation
                     .anyRequest().authenticated()
+                                .accessDecisionManager(unnanimous()) // use bean with unnanimous decision manager that add custom voter
                 .and()
                 .formLogin()
                     .loginPage("/login").permitAll() // login form page, exception to be available for people not logged in
@@ -225,6 +235,16 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
             return new MapBasedMethodSecurityMetadataSource(methodMap);
         }
 
+    }
+
+    /**
+     * Implements Unnanimous voter adding a custom RealTimeLockVoter
+     * @return
+     */
+    @Bean
+    public AccessDecisionManager unnanimous(){
+        final List<AccessDecisionVoter<? extends Object>> voters = Lists.newArrayList(new RoleVoter(), new AuthenticatedVoter(), new RealTimeLockVoter(), new WebExpressionVoter());
+        return new UnanimousBased(voters);
     }
 
 }

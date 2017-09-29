@@ -23,6 +23,7 @@ public class DemoWebConfig extends WebMvcConfigurerAdapter {
         registry.addViewController("/login").setViewName("loginPage");
         registry.addViewController("/forgotPassword").setViewName("forgotPassword");
         registry.addViewController("/profile").setViewName("profile");
+        registry.addViewController("/secured").setViewName("securedPage");
 
         registry.setOrder(Ordered.HIGHEST_PRECEDENCE);
     }
