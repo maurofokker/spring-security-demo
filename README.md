@@ -1368,6 +1368,43 @@ public ModelAndView list() {
 ```
 
 ## Authorization
+### Objects that can be secured
+* Web Requests (url requuest) is secured with the `FilterSecurityInterceptor` object
+* Method Invocations (method in a class -controller-) objects are secured with the `MethodSecurityInterceptor` object
+* Implementations mentioned above extends `AbstractSecurityInterceptor` that has the most part of the interceptor logic
+* Main driver in th interceptor logic runs in the `before invocaion` flow that runs before any invocation (web or method)
+    1. Get the configuration attributes for the particular request
+    2. Attempt to authoriza delegating to `AccessDecisionManager`
+        2.1. If access is `granted` then the invocation proceeds
+        2.2. If access is `not granted` then throw an `AccessDeniedException`  
+
+#### Securing methods in a centralized way (without annotations)
+* Better order and clean keeping security configurations centralized in just one place
+* When is not possible annotate sorcer code because there is no access to it and then it cannot be modify it
+* Method secured are authorized twice, one by the url (web request) and secondly authorize with the method invocation
+* Implementation to secure method invocation using AOP
+```java
+@EnableGlobalMethodSecurity(prePostEnabled = true)
+public static class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
+    @Override
+    public MethodSecurityMetadataSource customMethodSecurityMetadataSource() {
+        final Map<String, List<ConfigAttribute>> methodMap = new HashMap<>(); // map with methods to secure
+        methodMap.put("com.maurofokker.demo.web.controller.UserController.createForm*", SecurityConfig.createList("ROLE_ADMIN"));
+        return new MapBasedMethodSecurityMetadataSource(methodMap);
+    }
+}
+```
+* _Nota_: in order to use role authorities (instead of privileges) `DemoUserDetailsService.getAuthorities` should be implemented
+```java
+public final Collection<? extends GrantedAuthority> getAuthorities(final Collection<Role> roles) {
+    return roles.stream()
+            //.flatMap(role -> role.getPrivileges().stream()) // this go deep to privilage level authorities
+            .map(p -> new SimpleGrantedAuthority(p.getName())) // commented above line this get first level role authorities
+            .collect(Collectors.toList());
+}
+```
+* To debug above a break point can be placed in `AbstractSecurityInterceptor.beforeInvocation(..)` and see what implementation is used
+
 ### Auth process
 #### `AccessDecisionManager` as the main driver 
 * Starter in the authorization flow

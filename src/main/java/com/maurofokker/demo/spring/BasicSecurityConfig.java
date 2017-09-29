@@ -13,10 +13,16 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.scheduling.annotation.EnableAsync;
+import org.springframework.security.access.ConfigAttribute;
+import org.springframework.security.access.SecurityConfig;
 import org.springframework.security.access.intercept.RunAsImplAuthenticationProvider;
+import org.springframework.security.access.method.MapBasedMethodSecurityMetadataSource;
+import org.springframework.security.access.method.MethodSecurityMetadataSource;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.GlobalMethodSecurityConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -32,7 +38,9 @@ import org.springframework.security.web.authentication.rememberme.PersistentToke
 import javax.annotation.PostConstruct;
 import javax.sql.DataSource;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Configuration
 @EnableWebSecurity
@@ -200,6 +208,23 @@ public class BasicSecurityConfig extends WebSecurityConfigurerAdapter {
         authProvider.setUserDetailsService(userDetailsService);
         authProvider.setPasswordEncoder(passwordEncoder());
         return authProvider;
+    }
+
+
+    /**
+     * This is done in a new class and not in BasicSecurityConfig.java, because the latter already
+     * extends a base class (WebSecurityConfigurerAdapter)
+     */
+    @EnableGlobalMethodSecurity(prePostEnabled = true)
+    public static class MethodSecurityConfig extends GlobalMethodSecurityConfiguration {
+
+        @Override
+        public MethodSecurityMetadataSource customMethodSecurityMetadataSource() {
+            final Map<String, List<ConfigAttribute>> methodMap = new HashMap<>(); // map with methods to secure
+            methodMap.put("com.maurofokker.demo.web.controller.UserController.createForm*", SecurityConfig.createList("ROLE_ADMIN"));
+            return new MapBasedMethodSecurityMetadataSource(methodMap);
+        }
+
     }
 
 }
