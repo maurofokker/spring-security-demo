@@ -1635,52 +1635,145 @@ public class DemoUserDetailsService implements UserDetailsService {
 ```
 * Create repositories for `Role` and `Privilege`
 
+## Rest API Security
+
+### Basis
+#### Security Options
+* Basic Authentication -> stateless
+* Digest Authentication -> stateless
+* Form Based Authentication -> stateful
+* OAuth2 -> stateful
+* OAuth2 + JWT -> stateless
+* Custom Token Authentication -> stateful or stateless
+
+#### Token implementations
+* SAML (security assertion markup language)
+    * XML based
+    * Encriptions and signing options
+    * Expresive but need advanced XML Stack
+
+* Simple Web Token
+    * Much simpler than SAML
+    * Symetric, not enough cryptographic options
+
+* JWT
+    * Representing token using JSON (widely supported)
+    * Symmetric and asymmetric signatures and encryption
+    * Less flexibility than SAML but more than SWT
+    * Widely adopted
+    * Emerging protocol but very close to standardization
+    * Structure `header.payload.signature`
+        * `Header`: declare the type and the hashing algorithm
+        * `Payload`: contains the claims (information we want to transmit with token) that are registered, public and private
+        * `Signature`: made up of a hash of the header, payload and secret
+
+### Basic Authentication
+* It uses the `Authorization` header to transmit base 64 encoded credentials over the wire
+* Problems
+    * Base 64 encoded credentials can easily converted to plain text
+    * It needs to run over HTTPS but SSL only protects the data over the wire; once the data hits the server, credentials can be potentially exposed (there may still be internal routing, logging, etc).
+    * Password is sent repeatedly, for each request
+    * Client get the full master key - the actual credentials, so if these get compromise, the impact will be significantly greater than with a token based solution
+    * Password is cached by the browser and is automatically sent to the server on new requests
+    * Opens up the system to potential CSRF vulnerabilities without extra protection
+    * Only covers authentication. You can’t tell what permissions the user has because it has no concept of and no semantics for authorization.
+    * There's no distinction being made between actual users and machines
+
+### OAuth2 
+* OAuth2 is a standard for authorization, more specifically, delegated authorization.
+#### Roles and Actors 
+* `Resource Owner` (the user) is capable of granting access to a Resource.
+* `Resource Server` (the API) is the host of the protected Resources.
+* `Authorization Server` is capable of issuing Access Tokens to the Client. 
+* `Client` (the front end app) is capable of making requests on behalf of the Resource Owner.
+
+#### Confidential and Public Clients
+* `Confidential Clients` are capable of maintaining the confidentiality of their credentials (a server side client running on a secure server).
+* `Public Clients` cannot guarantee they're going to be able to maintain the confidentiality of their credentials (a native Android application, or an AngularJS client).
+
+#### High Level Flow
+1. The Client asks for access from the Resource Owner (User) - which grants it
+2. The Client talks to the Authorization Server
+3. The Authorization Server gives the Client a key (access token)
+4. With the Key, the Client talks to the Resource Server (API) and can access the Resource(s)
+
+#### Authorization Flows with User Interaction
+* `Authorization Code Flow` - used for server rendered applications
+    * Client request authorization from the User
+    * Request token from the authorization server
+    * With the token then Access resource
+
+* `Implicit Flow` - used forapplications that run on the user's device
+    * Access token is retrieve in the authorization request (it doesn't need a separate request)
+    * With token can start access resource
+    * Doesn't have refresh token, once the token expires it need to go with the authorization process once again
+    * Is a redirection based flow, the client must be redirection capable
+
+
+#### Authorization flows with no User Interaction
+
+* `Client Credentials Flow` - used for Client to Server communication, as there is no Resource Owner involved at all.
+    * Optimized for confidential clients and request access token with client credentials (client id and secret)
+    * With token can start access resources
+    * No resource owner is involved, so no user credentials are used
+
+* `Resource Owner Password Credentials Flow` - used for trusted applications (such as those owned by the service itself, server to server app).
+    * Request to the token endpoint using credentials (master key) and Authorization Server returns the access token
+    * With token can start access resources
+    
+
 ## References
 
 ### Spring Security
 
-1 [Java Configuration in Spring Security](http://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#jc)
+1. [Java Configuration in Spring Security](http://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#jc)
 
-2 [Authorization Architecture](https://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#authorization)
+2. [Authorization Architecture](https://docs.spring.io/spring-security/site/docs/4.0.4.RELEASE/reference/htmlsingle/#authorization)
 
-3 [Java Config and Form Login in the Spring Security](http://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-form)
+3. [Java Config and Form Login in the Spring Security](http://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-form)
 
-4 [Logout in the Spring Security Reference](http://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-logout)
+4. [Logout in the Spring Security Reference](http://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-logout)
 
-5 [Anonymous Authentication in the Spring Security Reference](http://docs.spring.io/spring-security/site/docs/current/reference/htmlsingle/#anonymous)
+5. [Anonymous Authentication in the Spring Security Reference](http://docs.spring.io/spring-security/site/docs/current/reference/htmlsingle/#anonymous)
 
-6 [Registration form](http://www.baeldung.com/spring-security-registration)
+6. [Registration form](http://www.baeldung.com/spring-security-registration)
 
-7 [Remember me hash token](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#remember-me-hash-token)
+7. [Remember me hash token](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#remember-me-hash-token)
 
-8 [Password encoding](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-password-encoding)
+8. [Password encoding](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-password-encoding)
 
-9 [Salt to hash](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#adding-salt-to-a-hash)
+9. [Salt to hash](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#adding-salt-to-a-hash)
 
-10 [Key stretching](https://en.wikipedia.org/wiki/Key_stretching)
+10. [Key stretching](https://en.wikipedia.org/wiki/Key_stretching)
 
-11 [Spring Bcrypt](https://docs.spring.io/spring-security/site/docs/current/apidocs/org/springframework/security/crypto/bcrypt/BCrypt.html)
+11. [Spring Bcrypt](https://docs.spring.io/spring-security/site/docs/current/apidocs/org/springframework/security/crypto/bcrypt/BCrypt.html)
 
-12 [Run as Authentication](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#runas)
+12. [Run as Authentication](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#runas)
 
-13 [Add custom filters](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-custom-filters)
+13. [Add custom filters](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-custom-filters)
 
-14 [Using others authentication providers with XML](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-auth-providers)
+14. [Using others authentication providers with XML](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-auth-providers)
 
-15 [AuthenticationManager, ProviderManager and AuthenticationProvider](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-authentication-manager)
+15. [AuthenticationManager, ProviderManager and AuthenticationProvider](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#core-services-authentication-manager)
 
-16 [Authentication user storage - inmemory, jdbc and jpa](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-authentication)
+16. [Authentication user storage - inmemory, jdbc and jpa](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#jc-authentication)
 
-17 [Authorization the Default AccessDecisionManager](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-access-manager)
+17. [Authorization the Default AccessDecisionManager](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#ns-access-manager)
 
-18 [Authorization Pre-Invocation Handling](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#authz-pre-invocation)
+18. [Authorization Pre-Invocation Handling](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#authz-pre-invocation)
 
-19 [Role and Privilege in spring](http://www.baeldung.com/role-and-privilege-for-spring-security-registration)
+19. [Role and Privilege in spring](http://www.baeldung.com/role-and-privilege-for-spring-security-registration)
 
-20 [Secured method invocation with AOP](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#aop-alliance)
+20. [Secured method invocation with AOP](https://docs.spring.io/autorepo/docs/spring-security/current/reference/htmlsingle/#aop-alliance)
 
 ### Persistence
 
-1 [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
+1. [Spring Data Jpa](https://docs.spring.io/spring-data/jpa/docs/current/reference/html/)
 
-2 [Introduction to jpa with spring boot data jpa](http://www.springboottutorial.com/introduction-to-jpa-with-spring-boot-data-jpa)
+2. [Introduction to jpa with spring boot data jpa](http://www.springboottutorial.com/introduction-to-jpa-with-spring-boot-data-jpa)
+
+### API Security
+
+1. [JWT site](https://jwt.io/)
+2. [OAuth2](https://oauth.net/2/)
+3. [Digital Ocean introduction to Oauth2](https://www.digitalocean.com/community/tutorials/an-introduction-to-oauth-2)
